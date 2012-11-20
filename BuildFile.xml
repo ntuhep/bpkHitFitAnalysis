@@ -1,0 +1,12 @@
+<use name="clhep"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/PluginManager"/>
+<use name="FWCore/ParameterSet"/>
+<use name="MyAna/bprimeKit"/>
+<use name="RecoBTag/PerformanceDB"/>
+<use name="CondFormats/PhysicsToolsObjects"/>
+<use name="RecoBTag/Records"/>
+<flags EDM_PLUGIN="1"/>
+<export>
+   <lib name="1"/>
+</export>
