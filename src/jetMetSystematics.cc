@@ -6,22 +6,9 @@
 #include "TMath.h"
 
 #include "MyAna/bprimeKit/interface/format.h"
+#include "MyAna/bprimeKit/interface/bpkUtils.h"
 
 #include "MyAna/bpkHitFitAnalysis/interface/jetMetSystematics.h"
-
-double dPhi(double p1,double p2)
-{
-   double dp = p1 - p2;
-   if      (fabs(dp+TMath::Pi()*2.) < fabs(dp)) dp += TMath::Pi()*2.;
-   else if (fabs(dp-TMath::Pi()*2.) < fabs(dp)) dp -= TMath::Pi()*2.;
-
-   return fabs(dp);
-}
-
-double dR(double e1, double e2, double p1, double p2)
-{
-   return sqrt(pow(e1-e2,2)+pow(dPhi(p1,p2),2));
-}
 
 const string jetMetSystematics::sType[]= {
    "None",
@@ -40,6 +27,7 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
      _evt(&evt),
      _jets(&jet),
      _leps(&lep),
+     _jesUncType(iConfig.getUntrackedParameter<std::string>("JESUncType","Total")),
      _jerEta(iConfig.getUntrackedParameter< std::vector<double> >("JEREtaMax")),
      _jerNominal(iConfig.getUntrackedParameter< std::vector<double> >("JERNominal")),
      _jerSigmaSym(iConfig.getUntrackedParameter< std::vector<double> >("JERSigmaSym")),
@@ -87,7 +75,9 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
 //             for(int ptB = 0; ptB < nPtBins; ptB++)
 //                f >> ptBins[etaB*nPtBins+ptB] >> jesPlus[etaB*nPtBins+ptB] >> jesMinus[etaB*nPtBins+ptB];
 //          }
-         _jesSigma = new JetCorrectionUncertainty(*(new JetCorrectorParameters(_jecFile,"Total")));
+
+         JetCorrectorParameters* jcp = new JetCorrectorParameters(_jecFile,_jesUncType);
+         _jesSigma = new JetCorrectionUncertainty(*jcp);
       }
       else {
          std::cout << "ERROR: Couldn't open JES File, can't continue!\n";
@@ -137,6 +127,7 @@ void jetMetSystematics::scale() {
          _jets->PtCorrL7g[j] *= ptscale; _jets->PtCorrL7uds[j] *= ptscale;
          _jets->PtCorrL7c[j] *= ptscale; _jets->PtCorrL7b[j]   *= ptscale;
          _jets->Px[j] *= ptscale; _jets->Py[j] *= ptscale; _jets->Pz[j] *= ptscale; _jets->Energy[j] *= ptscale;
+         _jets->Mass[j] *= ptscale;
          
          metVec -= TVector2(_jets->PtCorrRaw[j]*cos(_jets->Phi[j]), 
                             _jets->PtCorrRaw[j]*sin(_jets->Phi[j]) );
@@ -168,7 +159,7 @@ void jetMetSystematics::scale() {
       for(int l=0; l<_leps->Size; l++) {
          bool notInJet=true;
          for(int j=0; j<_jets->Size; j++) {
-            double dr = dR(_leps->Eta[l],_jets->Eta[j],_leps->Phi[l],_jets->Phi[j]);
+            double dr = ::dR(_leps->Eta[l],_jets->Eta[j],_leps->Phi[l],_jets->Phi[j]);
             if(_debug) {
                std::cout << "\tjet " << j << "(" << _jets->Eta[j] << "," << _jets->Phi[j] << ") ";
                std::cout << "lepton " << l << "(" << _leps->Eta[l] << "," << _leps->Phi[l] << ") ";
@@ -282,6 +273,6 @@ void jetMetSystematics::setType(std::string s) {
 //    if(boost::iequals(s,"met")) _type = MET;
 //    if(boost::iequals(s,"unc")) _type = UNC;
    
-   std::cout << "Systematic type: " << sType[_type] << std::endl;
+   std::cout << "jetMetSystematics: systematic type: " << sType[_type] << std::endl;
 }
 

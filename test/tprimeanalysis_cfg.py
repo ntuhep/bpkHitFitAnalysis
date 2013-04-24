@@ -22,11 +22,9 @@ options.parseArguments()
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
 process.load("CondCore.DBCommon.CondDBCommon_cfi")
-#Datameasurments from Summer11
-#process.load("RecoBTag.PerformanceDB.BTagPerformanceDB1107")
-#process.load("RecoBTag.PerformanceDB.PoolBTagPerformanceDB1107")
-#process.load("RecoBTag.PerformanceDB.BTagPerformanceDB100426")
-#process.load("RecoBTag.PerformanceDB.PoolBTagPerformanceDB100426")
+
+process.load("RecoBTag.PerformanceDB.BTagPerformanceDB2013")
+process.load("RecoBTag.PerformanceDB.PoolBTagPerformanceDB2013")
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )#don't change, this doesn't set max events
 
@@ -39,21 +37,16 @@ from MyAna.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *
 
 debug = cms.untracked.bool(False)
 
-usePFLeptons = True
-usePFJets = True
+useSplitJets = False
 
-lepBranches = 'LepInfo'
-if usePFLeptons:
-    lepBranches = 'PFLepInfo'
-
-jetBranches = 'JetInfo'
-if usePFJets:
-    jetBranches = 'PFJetInfo'
+jetBranches = 'PFJetInfo'
+if useSplitJets:
+    jetBranches = 'SplitJetInfo'
 
 
 ObjectSelection = defaultObjectParameters.clone(
     Debug = debug,
-    UsePFIsolation = cms.untracked.bool(usePFLeptons)
+    UsePFIsolation = cms.untracked.bool(True)
     )
 
 EventSelection = defaultEventParameters.clone(
@@ -94,11 +87,10 @@ process.demo = cms.EDAnalyzer(
     'bpkHitFitAnalysis',
     InputFile        = cms.untracked.string(options.inFile),
     MaxEvents        = cms.untracked.int32(-1),#set to -1 for all events
-    #MaxEvents        = cms.untracked.int32(100),#set to -1 for all events
     OutputFile       = cms.untracked.string(options.outFile),
     Debug            = debug,
     Channels         = cms.untracked.vint32(13),#11 for electron, 13 for muon, can do both
-    LeptonCollection = cms.untracked.string(lepBranches),
+    LeptonCollection = cms.untracked.string('PFLepInfo'),
     JetCollection    = cms.untracked.string(jetBranches),
     CutFlow              = cms.untracked.bool(True),#provide histogram showing how many events passed each selection level
     Skim                 = cms.untracked.bool(False),

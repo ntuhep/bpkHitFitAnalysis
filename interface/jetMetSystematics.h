@@ -65,6 +65,7 @@ class jetMetSystematics {
 
       //JES scaling info
       JetCorrectionUncertainty *_jesSigma;
+      std::string _jesUncType;
 
       //JER scaling info
       std::vector<double> _jerEta;//define max edge of eta bin

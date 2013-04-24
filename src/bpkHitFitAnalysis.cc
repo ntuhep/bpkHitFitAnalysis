@@ -14,7 +14,7 @@
 // Original Author:  Ulysses Grundler,598 R-016,+41227679822,
 //         Created:  Thu Aug  4 16:05:23 CEST 2011
 // Second Author: Yeng-Ming Tzeng, B13 2-054, +41764872910, 
-// $Id: bpkHitFitAnalysis.cc,v 1.8 2012/03/27 08:47:58 twang Exp $
+// $Id: bpkHitFitAnalysis.cc,v 1.1 2012/11/20 13:46:38 grundler Exp $
 //
 //
 
@@ -287,32 +287,32 @@ bpkHitFitAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 		 	jetmom.push_back(thisjetmom);
 	 	}
      	if(EvtInfo.McFlag && modifyBTags) {
-	     	//btsf->setSeed(entry*1e+12+EvtInfo.RunNo*1e+6+EvtInfo.EvtNo);
+	     	btsf->setSeed(entry*1e+12+EvtInfo.RunNo*1e+6+EvtInfo.EvtNo);
 		    //get et, eta of jetsjets
-    		//for(int ijet=0; ijet<JetInfo.Size; ijet++) {
-			//std::pair<float,float> thisjetmom(JetInfo.Et[ijet],JetInfo.Eta[ijet]);
-			//jetmom.push_back(thisjetmom);
-			//if(ijet<nJetsToModify) jetisbtag[ijet] = jetIsBTagged(ijet);
-	    	//}
-		    //btsf->readDB(iSetup,jetmom);
-			BTag_Utility btag_uti(JetInfo, btag_sigma);
+    		for(int ijet=0; ijet<JetInfo.Size; ijet++) {
+			std::pair<float,float> thisjetmom(JetInfo.Et[ijet],JetInfo.Eta[ijet]);
+			jetmom.push_back(thisjetmom);
+			if(ijet<nJetsToModify) jetisbtag[ijet] = jetIsBTagged(ijet);
+	    	}
+		    btsf->readDB(iSetup,jetmom);
+			//BTag_Utility btag_uti(JetInfo, btag_sigma);
 		    for(int ijet=0; ijet<JetInfo.Size; ijet++) {
 				if(ijet>=nJetsToModify) break;
-				double btag_sf = btag_uti.GetSF(ijet);
-				if(abs(JetInfo.GenFlavor[ijet]) == 5 || abs(JetInfo.GenFlavor[ijet]) ==4){BTAG_SF->Fill(btag_sf);}
-				else {BTAG_SF_LIGHT->Fill(btag_sf);}
-				double btag_eff = btag_uti.GetEFF(ijet);
-				if(abs(JetInfo.GenFlavor[ijet]) == 5 || abs(JetInfo.GenFlavor[ijet]) ==4) {BTAG_EFF->Fill(btag_eff);}
-				else {BTAG_EFF_LIGHT->Fill(btag_eff);	
-					if(JetInfo.Pt[ijet] > 30 && fabs(JetInfo.Eta[ijet]) < 2.4 && JetInfo.JetIDLOOSE[ijet] ){ BTAG_EFF_LIGHT_PASS->Fill(btag_eff);}
-				}
+// 				double btag_sf = btag_uti.GetSF(ijet);
+// 				if(abs(JetInfo.GenFlavor[ijet]) == 5 || abs(JetInfo.GenFlavor[ijet]) ==4){BTAG_SF->Fill(btag_sf);}
+// 				else {BTAG_SF_LIGHT->Fill(btag_sf);}
+// 				double btag_eff = btag_uti.GetEFF(ijet);
+// 				if(abs(JetInfo.GenFlavor[ijet]) == 5 || abs(JetInfo.GenFlavor[ijet]) ==4) {BTAG_EFF->Fill(btag_eff);}
+// 				else {BTAG_EFF_LIGHT->Fill(btag_eff);	
+// 					if(JetInfo.Pt[ijet] > 30 && fabs(JetInfo.Eta[ijet]) < 2.4 && JetInfo.JetIDLOOSE[ijet] ){ BTAG_EFF_LIGHT_PASS->Fill(btag_eff);}
+// 				}
 				
-				btag_sf = btag_sf + btag_uti.Btag_SF_ERR;
-				if(btag_sf == -999 || btag_eff == -999 || btag_uti.Btag_SF_ERR == -999) std::cout << "SF = -999, Please Check" << std::endl;
-				//float btag_sf = btsf->getSF("BTAG" + bTagAlgo + "M",ijet);
-				//float btag_eff = btsf->BtagEff_[0];//getSF("BTAG" + bTagAlgo + "Meff",ijet);
-				//float bmistag_sf = btsf->getSF("MISTAG" + bTagAlgo + "M",ijet);
-				//float bmistag_eff = btsf->getSF("MISTAG" + bTagAlgo + "Meff",ijet);
+// 				btag_sf = btag_sf + btag_uti.Btag_SF_ERR;
+// 				if(btag_sf == -999 || btag_eff == -999 || btag_uti.Btag_SF_ERR == -999) std::cout << "SF = -999, Please Check" << std::endl;
+				double btag_sf = btsf->getSF("BTAG" + bTagAlgo + "M",ijet);
+				double btag_eff = btsf->BtagEff_[0];//getSF("BTAG" + bTagAlgo + "Meff",ijet);
+				double bmistag_sf = btsf->getSF("MISTAG" + bTagAlgo + "M",ijet);
+				double bmistag_eff = btsf->getSF("MISTAG" + bTagAlgo + "Meff",ijet);
 				if(debug) {
 	   				std::cout << "Jet " << ijet << ": Et,Eta,PdgId,tag= " << jetmom[ijet].first << "," << jetmom[ijet].second << "," << JetInfo.GenFlavor[ijet] << "," << jetisbtag[ijet] << std::endl;
 					//std::cout << " btageff_sf=" << btag_sf << " bmistag_sf=" << bmistag_sf << " bmistag_eff=" << bmistag_eff << std::endl;

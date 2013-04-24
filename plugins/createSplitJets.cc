@@ -1,0 +1,328 @@
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <boost/algorithm/string.hpp>
+#include "TLorentzVector.h"
+#include "TMath.h"
+#include "TFile.h"
+#include "TChain.h"
+
+#include "MyAna/bprimeKit/interface/format.h"
+#include "MyAna/bprimeKit/interface/bpkUtils.h"
+
+#include "MyAna/bpkHitFitAnalysis/plugins/createSplitJets.h"
+
+createSplitJets::createSplitJets(const edm::ParameterSet& iConfig)
+   : maxEvents(iConfig.getUntrackedParameter<int>("MaxEvents",-1)),
+     inFile(iConfig.getUntrackedParameter<std::string>("InputFile")),
+     outFile(iConfig.getUntrackedParameter<std::string>("OutputFile")),
+     _inStdJetCollection(iConfig.getUntrackedParameter<std::string>("InputStandardJets")),
+     _inWJetCollection(iConfig.getUntrackedParameter<std::string>("InputWJets")),
+     _outJetCollection(iConfig.getUntrackedParameter<std::string>("OutputJets")),
+     _wMassLo(iConfig.getUntrackedParameter<double>("MinWMass",60.)),
+     _wMassHi(iConfig.getUntrackedParameter<double>("MaxWMass",100.)),
+     _massDropMax(iConfig.getUntrackedParameter<double>("MaxMassDrop",-1.)),
+     _matchDRMax(iConfig.getUntrackedParameter<double>("MaxDRMatch",0.4)),
+     _bTagCut(iConfig.getUntrackedParameter<double>("BTagCut",0.679)),
+     _debug(iConfig.getUntrackedParameter<bool>("Debug",false))
+{
+
+}
+
+createSplitJets::~createSplitJets()
+{
+
+   if(_debug) std::cout << "createSplitJets: destruction done\n";
+}
+
+void 
+createSplitJets::beginJob()
+{
+   if(_debug) std::cout << "createSplitJets: starting beginJob\n";
+   
+   chain = new TChain("bprimeKit/root");
+   chain->Add(inFile.c_str());
+   
+   if(maxEvents<0 || maxEvents>chain->GetEntries())
+      maxEvents = chain->GetEntries();
+   
+   _evt.Register(chain);
+   _inStdJets.Register(chain,_inStdJetCollection);
+   _inWJets.Register(chain,_inWJetCollection);
+
+   newfile = new TFile(outFile.c_str(),"recreate");
+   newtree = chain->CloneTree(0);
+   _outJets.RegisterTree(newtree,_outJetCollection);
+   if(_debug) std::cout << "createSplitJets: new tree ready\n";
+
+
+   if(_debug) std::cout << "createSplitJets: finishing beginJob\n";
+}
+
+void
+createSplitJets::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+{
+   if(_debug) std::cout << "createSplitJets: starting analyze\n";
+
+   for(int entry=0; entry<maxEvents; entry++) {//loop over entries
+      if((entry%1000)==0) printf("Loading event %i of %i.\n",entry,maxEvents);
+      chain->GetEntry(entry);
+      memset(&_outJets,0x00,sizeof(_outJets));
+      
+      if(_debug) std::cout << "Entry " << entry << ": Run " << _evt.RunNo << " Event " << _evt.EvtNo << std::endl;
+
+      //loop over wide jets: w-tag, put split jets in another collection
+      //within wide jet loop, loop over ak5 jets: match (allow for multiple matches?), index if matched
+      //loop over ak5 jets again, insert non-indexed jets into collection
+      std::vector<int> matchedStdJets; matchedStdJets.clear();
+      for(int iwjet=0; iwjet<_inWJets.Size; iwjet++) {//loop over wide jets
+         if(_debug) std::cout << "\twide jet " << iwjet << std::endl;
+
+         if(!shouldSplit(iwjet)) continue;
+
+         int match = -1;
+         bool hadBmatch = false;
+         for(int jstdjet=0; jstdjet<_inStdJets.Size; jstdjet++) {//loop over standard jets
+            double dR = ::dR(_inWJets.Eta[iwjet],_inStdJets.Eta[jstdjet],_inWJets.Phi[iwjet],_inStdJets.Phi[jstdjet]);
+            if(_debug) std::cout << "\t\tstandard jet " << jstdjet << " dR=" << dR << std::endl;
+            if(dR<_matchDRMax) {
+               if(_inStdJets.CombinedSVBJetTags[jstdjet] > _bTagCut) {
+                  if(_debug) std::cout << "\t\tGot match to b-tagged jet. Won't use\n";
+                  hadBmatch = true; 
+                  continue; //don't want to actually match to b-tagged jets
+               }
+               match = jstdjet;
+               if(_debug) {
+                  for(unsigned i=0; i<matchedStdJets.size(); i++) 
+                     if(jstdjet == matchedStdJets[i])
+                        std::cout << "This jet was already matched to another wide jet\n";
+               }
+               matchedStdJets.push_back(jstdjet);
+               break;
+            }
+         }//loop over standard jets
+         if(match==-1) {
+            if(!hadBmatch) std::cout << "No match found? Can that be right?\n";
+            continue;
+         }
+
+         if(_debug) std::cout << "\tGot match at " << match << ". Now splitting jets\n";
+         insertSplitJets(iwjet,match,_evt.McFlag==1);
+      }//loop over wide jets
+
+      if(_debug) std::cout << "Done looping over wide jets, now to standard jets\n";
+
+      for(int istdjet=0; istdjet<_inStdJets.Size; istdjet++) {//loop over standard jets
+         if(_debug) std::cout << "\tStandard jet " << istdjet;
+         bool wasMatched = false;
+         for(unsigned jmatched=0; jmatched<matchedStdJets.size(); jmatched++) {//loop over matched jets
+            if(matchedStdJets[jmatched] == istdjet) {
+               wasMatched = true;
+               break;
+            }
+         }
+         if(_debug) std::cout << (wasMatched ? " was" : " wasn't") << " matched\n";
+         if(wasMatched) continue; //already added split jets, don't want this too.
+
+         if(_debug) std::cout << "\tInserting jet\n";
+         insertJetCopy(istdjet);
+      }//loop over standard jets
+
+      newtree->Fill();
+   }//loop over entries
+
+   if(_debug) std::cout << "createSplitJets: finishing analyze\n";
+}
+
+void
+createSplitJets::endJob()
+{
+   if(_debug) std::cout << "createSplitJets: starting endJob\n";
+
+   newfile->mkdir("bprimeKit");
+   newfile->cd("bprimeKit");
+   newtree->Write();
+   if(_debug) std::cout << "createSplitJets: new tree written\n";
+
+   if(_debug) std::cout << "createSplitJets: finishing endJob\n";
+}
+
+bool 
+createSplitJets::shouldSplit(int jet)
+{
+   if(_debug) std::cout << "\tSplit jet " << jet << "? mass,1,2=" 
+                        << _inWJets.Mass[jet] << "," 
+                        << _inWJets.MassD1[jet] << "," 
+                        << _inWJets.MassD2[jet] << std::endl;
+   double mass = _inWJets.Mass[jet];
+   if(mass < _wMassLo) return false;
+   if(mass > _wMassHi) return false;
+
+   if(_massDropMax<0.) return true; //let <0 mean don't cut on mass drop
+   double massDrop = (_inWJets.MassD1[jet]>_inWJets.MassD2[jet]) ? _inWJets.MassD1[jet]/mass : _inWJets.MassD2[jet]/mass;
+   if(massDrop>_massDropMax) return false;
+
+   return true;
+}
+
+void 
+createSplitJets::insertSplitJets(int idx_w, int idx_std, bool isMC)
+{//insert the daughter jets of wide jet at idx_w, matched to standard jet at idx_std
+   if(_debug) std::cout << "\t\tInsert split jets from wide jet " << idx_w 
+                        << " matched to standard jet " << idx_std
+                        << " isMC? " << isMC 
+                        << " to index " << _outJets.Size << std::endl;
+
+   //split wide jet
+   TLorentzVector jW, jS[2];
+   jS[0].SetPtEtaPhiM(_inWJets.PtD1[idx_w], _inWJets.EtaD1[idx_w], _inWJets.PhiD1[idx_w], _inWJets.MassD1[idx_w]);
+   jS[1].SetPtEtaPhiM(_inWJets.PtD2[idx_w], _inWJets.EtaD2[idx_w], _inWJets.PhiD2[idx_w], _inWJets.MassD2[idx_w]);
+   jW = jS[0] + jS[1];
+   double rescale = _inWJets.Pt[idx_w]/jW.Pt();
+         
+   jS[0].SetPtEtaPhiM(_inWJets.PtD1[idx_w] * rescale, _inWJets.EtaD1[idx_w], _inWJets.PhiD1[idx_w], _inWJets.MassD1[idx_w] * rescale);
+   jS[1].SetPtEtaPhiM(_inWJets.PtD2[idx_w] * rescale, _inWJets.EtaD2[idx_w], _inWJets.PhiD2[idx_w], _inWJets.MassD2[idx_w] * rescale);
+
+   //insert split jets into collection
+   for(int iS=0; iS<2; iS++) {//loop over 2 daughters
+      _outJets.Index[_outJets.Size] = _outJets.Size;
+      _outJets.Unc[_outJets.Size] = 1 + iS;  //use to indicate jet is split jet
+
+      if(iS==0) {
+         _outJets.Et  [_outJets.Size] = _inWJets.EtD1  [idx_w] * rescale;
+         _outJets.Pt  [_outJets.Size] = _inWJets.PtD1  [idx_w] * rescale;
+         _outJets.Phi [_outJets.Size] = _inWJets.PhiD1 [idx_w];
+         _outJets.Eta [_outJets.Size] = _inWJets.EtaD1 [idx_w];
+         _outJets.Mass[_outJets.Size] = _inWJets.MassD1[idx_w] * rescale;
+      }
+      else {
+         _outJets.Et  [_outJets.Size] = _inWJets.EtD2  [idx_w] * rescale;
+         _outJets.Pt  [_outJets.Size] = _inWJets.PtD2  [idx_w] * rescale;
+         _outJets.Phi [_outJets.Size] = _inWJets.PhiD2 [idx_w];
+         _outJets.Eta [_outJets.Size] = _inWJets.EtaD2 [idx_w];
+         _outJets.Mass[_outJets.Size] = _inWJets.MassD2[idx_w] * rescale;
+      }
+
+      _outJets.Px    [_outJets.Size] = jS[iS].Px();
+      _outJets.Py    [_outJets.Size] = jS[iS].Py();
+      _outJets.Pz    [_outJets.Size] = jS[iS].Pz();
+      _outJets.Energy[_outJets.Size] = jS[iS].E();
+
+      //copy variables from the Std jet 'parent', nothing better available
+      //only JetIDLOOSE used in jet selection
+      _outJets.NTracks      [_outJets.Size] = _inStdJets.NTracks      [idx_std];
+      _outJets.JetIDLOOSE   [_outJets.Size] = _inStdJets.JetIDLOOSE   [idx_std];
+      _outJets.NConstituents[_outJets.Size] = _inStdJets.NConstituents[idx_std];
+      _outJets.NCH          [_outJets.Size] = _inStdJets.NCH          [idx_std];
+      _outJets.CEF          [_outJets.Size] = _inStdJets.CEF          [idx_std];
+      _outJets.NHF          [_outJets.Size] = _inStdJets.NHF          [idx_std];
+      _outJets.NEF          [_outJets.Size] = _inStdJets.NEF          [idx_std];
+      _outJets.CHF          [_outJets.Size] = _inStdJets.CHF          [idx_std];
+      _outJets.CombinedSVBJetTags[_outJets.Size] = _inStdJets.CombinedSVBJetTags[idx_std];
+      _outJets.Area         [_outJets.Size] = _inStdJets.Area         [idx_std];
+
+      if(isMC) {
+         _outJets.GenFlavor[_outJets.Size] = _inStdJets.GenFlavor[idx_std];
+         _outJets.GenPdgID [_outJets.Size] = _inStdJets.GenPdgID [idx_std];
+
+         //   approx
+         _outJets.GenJetEta[_outJets.Size] = _outJets.Eta[_outJets.Size];
+         _outJets.GenJetPhi[_outJets.Size] = _outJets.Phi[_outJets.Size];
+         if(iS==0)
+            _outJets.GenJetPt[_outJets.Size] = _inStdJets.GenJetPt[idx_std]*(_inWJets.PtD1[idx_w]/_inWJets.Pt[idx_w]);
+         else
+            _outJets.GenJetPt[_outJets.Size] = _inStdJets.GenJetPt[idx_std]*(_inWJets.PtD2[idx_w]/_inWJets.Pt[idx_w]);
+      }
+
+      double scf = _outJets.Pt[_outJets.Size]/_inWJets.Pt[idx_w];
+
+      _outJets.PtCorrRaw  [_outJets.Size] = _inWJets.PtCorrRaw  [idx_w]*scf;
+      _outJets.PtCorrL2   [_outJets.Size] = _inWJets.PtCorrL2   [idx_w]*scf;
+      _outJets.PtCorrL3   [_outJets.Size] = _inWJets.PtCorrL3   [idx_w]*scf;
+      _outJets.PtCorrL7g  [_outJets.Size] = _inWJets.PtCorrL7g  [idx_w]*scf;
+      _outJets.PtCorrL7uds[_outJets.Size] = _inWJets.PtCorrL7uds[idx_w]*scf;
+      _outJets.PtCorrL7c  [_outJets.Size] = _inWJets.PtCorrL7c  [idx_w]*scf;
+      _outJets.PtCorrL7b  [_outJets.Size] = _inWJets.PtCorrL7b  [idx_w]*scf;
+
+      _outJets.Size++;
+   }//loop over 2 daughters
+
+}
+
+void
+createSplitJets::insertJetCopy(int idx)
+{//insert copy of standard jet into new collection
+   if(_debug) std::cout << "\t\tInsert copy of standard jet " << idx
+                        << " to index " << _outJets.Size << std::endl;
+
+   _outJets.Index[_outJets.Size] = _outJets.Size;
+   _outJets.NTracks[_outJets.Size] = _inStdJets.NTracks[idx];
+   _outJets.Et[_outJets.Size] = _inStdJets.Et[idx];
+   _outJets.Pt[_outJets.Size] = _inStdJets.Pt[idx];
+   _outJets.Unc[_outJets.Size] = 0; //set to indicate from standard jet
+   _outJets.Eta[_outJets.Size] = _inStdJets.Eta[idx];
+   _outJets.Phi[_outJets.Size] = _inStdJets.Phi[idx];
+   _outJets.JetIDLOOSE[_outJets.Size] = _inStdJets.JetIDLOOSE[idx];
+   _outJets.JetCharge[_outJets.Size] = _inStdJets.JetCharge[idx];
+   _outJets.NConstituents[_outJets.Size] = _inStdJets.NConstituents[idx];
+   _outJets.NCH[_outJets.Size] = _inStdJets.NCH[idx];
+   _outJets.CEF[_outJets.Size] = _inStdJets.CEF[idx];
+   _outJets.NHF[_outJets.Size] = _inStdJets.NHF[idx];
+   _outJets.NEF[_outJets.Size] = _inStdJets.NEF[idx];
+   _outJets.CHF[_outJets.Size] = _inStdJets.CHF[idx];
+   _outJets.JVAlpha[_outJets.Size] = _inStdJets.JVAlpha[idx];
+   _outJets.JVBeta[_outJets.Size] = _inStdJets.JVBeta[idx];
+   _outJets.PtCorrRaw[_outJets.Size] = _inStdJets.PtCorrRaw[idx];  
+   _outJets.PtCorrL2[_outJets.Size] = _inStdJets.PtCorrL2[idx];  
+   _outJets.PtCorrL3[_outJets.Size] = _inStdJets.PtCorrL3[idx];  
+   _outJets.PtCorrL7g[_outJets.Size] = _inStdJets.PtCorrL7g[idx];
+   _outJets.PtCorrL7uds[_outJets.Size] = _inStdJets.PtCorrL7uds[idx];
+   _outJets.PtCorrL7c[_outJets.Size] = _inStdJets.PtCorrL7c[idx];  
+   _outJets.PtCorrL7b[_outJets.Size] = _inStdJets.PtCorrL7b[idx];  
+   _outJets.JetBProbBJetTags[_outJets.Size] = _inStdJets.JetBProbBJetTags[idx];
+   _outJets.JetProbBJetTags[_outJets.Size] = _inStdJets.JetProbBJetTags[idx];
+   _outJets.TrackCountHiPurBJetTags[_outJets.Size] = _inStdJets.TrackCountHiPurBJetTags[idx];  
+   _outJets.TrackCountHiEffBJetTags[_outJets.Size] = _inStdJets.TrackCountHiEffBJetTags[idx]; 
+   _outJets.SimpleSVBJetTags[_outJets.Size] = _inStdJets.SimpleSVBJetTags[idx];
+   _outJets.SimpleSVHEBJetTags[_outJets.Size] = _inStdJets.SimpleSVHEBJetTags[idx];
+   _outJets.SimpleSVHPBJetTags[_outJets.Size] = _inStdJets.SimpleSVHPBJetTags[idx];
+   _outJets.CombinedSVBJetTags[_outJets.Size] = _inStdJets.CombinedSVBJetTags[idx];
+   _outJets.CombinedSVMVABJetTags[_outJets.Size] = _inStdJets.CombinedSVMVABJetTags[idx];
+   _outJets.SoftElecByIP3dBJetTags[_outJets.Size] = _inStdJets.SoftElecByIP3dBJetTags[idx];
+   _outJets.SoftElecByPtBJetTags[_outJets.Size] = _inStdJets.SoftElecByPtBJetTags[idx];  
+   _outJets.SoftMuonBJetTags[_outJets.Size] = _inStdJets.SoftMuonBJetTags[idx];
+   _outJets.SoftMuonByIP3dBJetTags[_outJets.Size] = _inStdJets.SoftMuonByIP3dBJetTags[idx];
+   _outJets.SoftMuonByPtBJetTags[_outJets.Size] = _inStdJets.SoftMuonByPtBJetTags[idx];  
+   _outJets.DoubleSVHighEffBJetTags[_outJets.Size] = _inStdJets.DoubleSVHighEffBJetTags[idx];
+   _outJets.GenJetPt[_outJets.Size] = _inStdJets.GenJetPt[idx];
+   _outJets.GenJetEta[_outJets.Size] = _inStdJets.GenJetEta[idx];
+   _outJets.GenJetPhi[_outJets.Size] = _inStdJets.GenJetPhi[idx];
+   _outJets.GenPt[_outJets.Size] = _inStdJets.GenPt[idx];
+   _outJets.GenEta[_outJets.Size] = _inStdJets.GenEta[idx];
+   _outJets.GenPhi[_outJets.Size] = _inStdJets.GenPhi[idx];
+   _outJets.GenPdgID[_outJets.Size] = _inStdJets.GenPdgID[idx];
+   _outJets.GenFlavor[_outJets.Size] = _inStdJets.GenFlavor[idx];
+   _outJets.GenMCTag[_outJets.Size] = _inStdJets.GenMCTag[idx];
+   _outJets.Px[_outJets.Size] = _inStdJets.Px[idx];
+   _outJets.Py[_outJets.Size] = _inStdJets.Py[idx];
+   _outJets.Pz[_outJets.Size] = _inStdJets.Pz[idx];
+   _outJets.Energy[_outJets.Size] = _inStdJets.Energy[idx];
+
+   _outJets.Mass[_outJets.Size] = _inStdJets.Mass[idx];
+   _outJets.Area[_outJets.Size] = _inStdJets.Area[idx];
+
+   _outJets.MassD1[_outJets.Size] = _inStdJets.MassD1[idx];
+   _outJets.MassD2[_outJets.Size] = _inStdJets.MassD2[idx];
+   _outJets.PtD1[_outJets.Size] = _inStdJets.PtD1[idx];
+   _outJets.PtD2[_outJets.Size] = _inStdJets.PtD2[idx];
+   _outJets.EtD1[_outJets.Size] = _inStdJets.EtD1[idx];
+   _outJets.EtD2[_outJets.Size] = _inStdJets.EtD2[idx];
+   _outJets.EtaD1[_outJets.Size] = _inStdJets.EtaD1[idx];
+   _outJets.EtaD2[_outJets.Size] = _inStdJets.EtaD2[idx];
+   _outJets.PhiD1[_outJets.Size] = _inStdJets.PhiD1[idx];
+   _outJets.PhiD2[_outJets.Size] = _inStdJets.PhiD2[idx];
+
+   _outJets.Size++;
+}
+
+DEFINE_FWK_MODULE(createSplitJets);

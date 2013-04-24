@@ -1,11 +1,15 @@
 #include "MyAna/bpkHitFitAnalysis/interface/BTagSFUtil-tprime.h"
 
+using namespace std;
+
 BTagSFUtil::BTagSFUtil( const edm::ParameterSet& iConfig )//std::string algo, int seed ) 
   : BtagCut_(iConfig.getUntrackedParameter< std::vector<double> >("BTagCuts")),
     BtagEff_(iConfig.getUntrackedParameter< std::vector<double> >("BTagEffs")),
     maxNJets(iConfig.getUntrackedParameter<int>("MaxNJets",8)),
     Btageff_SF_(iConfig.getUntrackedParameter<double>("BTagEffSF",1.)),
     algo_(iConfig.getUntrackedParameter<std::string>("BTagAlgorithm","CSV")),
+    source_(iConfig.getUntrackedParameter<std::string>("Source","MUJETS")),
+    period_(iConfig.getUntrackedParameter<std::string>("Period","ABCD")),
     debug_(iConfig.getUntrackedParameter<bool>("Debug",false))
 {
   int seed = iConfig.getUntrackedParameter<int>("Seed",0);
@@ -24,16 +28,16 @@ void BTagSFUtil::readDB(const edm::EventSetup& iSetup, std::vector< std::pair<fl
   ScaleFactors.clear();
   ScaleFactorsEff.clear();
 
-  for( size_t iMeasure = 0; iMeasure < measureName.size(); iMeasure++ ) {
-    if(debug_) std::cout << "iMeasure = " << iMeasure << " Name = " <<  measureName[iMeasure] << " Type = " << measureType[iMeasure] << " Map = " << measureMap[measureType[iMeasure]] << std::endl;
+  for( size_t iMeasure = 0; iMeasure < measure.size(); iMeasure++ ) {
+    if(debug_) std::cout << "iMeasure = " << iMeasure << " Name = " <<  measure[iMeasure].first << " Type = " << measure[iMeasure].second << " Map = " << measureMap[measure[iMeasure].second] << std::endl;
     //Setup our measurement
-    iSetup.get<BTagPerformanceRecord>().get( measureName[ iMeasure ],perfH);
+    iSetup.get<BTagPerformanceRecord>().get( measure[ iMeasure ].first,perfH);
     const BtagPerformance & perf = *(perfH.product());
     BinningPointByMap measurePoint;
 
     float scaler = 1.;
     std::string suffix = "";
-    if ( measureType[ iMeasure ] == "BTAGLEFF" || measureType[ iMeasure ] == "BTAGBEFF" ) {
+    if ( measure[ iMeasure ].second == "BTAGLEFF" || measure[ iMeasure ].second == "BTAGBEFF" ) {
       if(debug_) std::cout << "efficiency\n";
       suffix = "eff";
     }
@@ -47,18 +51,19 @@ void BTagSFUtil::readDB(const edm::EventSetup& iSetup, std::vector< std::pair<fl
     for(size_t ijet=0; ijet<nJets; ijet++) {
       measurePoint.reset();
       measurePoint.insert(BinningVariables::JetEt, (jets[ijet]).first );                // pass in the et of the jet
-      measurePoint.insert(BinningVariables::JetAbsEta, fabs(  (jets[ijet]).second ) );  // pass in the absolute eta of the jet
+      //measurePoint.insert(BinningVariables::JetAbsEta, fabs(  (jets[ijet]).second ) );  // pass in the absolute eta of the jet
+      measurePoint.insert(BinningVariables::JetEta, (jets[ijet]).second );  // pass in the eta of the jet
 
-      jetsf.push_back(scaler*perf.getResult( measureMap[measureType[iMeasure]], measurePoint ));
+      jetsf.push_back(scaler*perf.getResult( measureMap[measure[iMeasure].second], measurePoint ));
       if(debug_) std::cout << "jet " << ijet << " result = " << jetsf[ijet] << std::endl;
     // Extract the mistag eff value
     }
 
-    if ( measureType[ iMeasure ] == "BTAGLEFF" || measureType[ iMeasure ] == "BTAGBEFF" ) {
-      ScaleFactorsEff[ measureName[iMeasure] + suffix ] = jetsf;
+    if ( measure[ iMeasure ].second == "BTAGLEFF" || measure[ iMeasure ].second == "BTAGBEFF" ) {
+      ScaleFactorsEff[ measure[iMeasure].first + suffix ] = jetsf;
     }
     else {
-      ScaleFactors[ measureName[iMeasure] ] = jetsf;
+      ScaleFactors[ measure[iMeasure].first ] = jetsf;
     }
 
   }
@@ -128,7 +133,8 @@ bool BTagSFUtil::applySF(bool& isBTagged, float Btag_SF, float Btag_eff){
     if( !isBTagged ) {
 
       //fraction of jets that need to be upgraded
-      float mistagPercent = (1.0 - Btag_SF) / (1.0 - (Btag_SF/Btag_eff) );
+      //float mistagPercent = (1.0 - Btag_SF) / (1.0 - (Btag_SF/Btag_eff) );
+      float mistagPercent = (1.0 - Btag_SF) / (1.0 - (1.0/Btag_eff) );
 
       //upgrade to tagged
       if( coin < mistagPercent ) {newBTag = true;}
@@ -244,25 +250,36 @@ void BTagSFUtil::setupMaps() {
   measureMap["MUFAKE"]=PerformanceResult::MUFAKE; 
   measureMap["MUEFAKE"]=PerformanceResult::MUEFAKE;
       
-  // Define which Btag and Mistag algorithm you want to use. These are not user defined and need to be exact
-  measureName.push_back("MISTAG" + algo_ + "M");
-  measureName.push_back("BTAG" + algo_ + "M");
-  measureName.push_back("MISTAG" + algo_ + "L");
-  measureName.push_back("BTAG" + algo_ + "L");
-  measureName.push_back("MISTAG" + algo_ + "M");
-  measureName.push_back("MISTAG" + algo_ + "L");
+//   // Define which Btag and Mistag algorithm you want to use. These are not user defined and need to be exact
+//   measureName.push_back("MISTAG" + algo_ + "M");
 //   measureName.push_back("BTAG" + algo_ + "M");
+//   measureName.push_back("MISTAG" + algo_ + "L");
 //   measureName.push_back("BTAG" + algo_ + "L");
+//   measureName.push_back("MISTAG" + algo_ + "M");
+//   measureName.push_back("MISTAG" + algo_ + "L");
+// //   measureName.push_back("BTAG" + algo_ + "M");
+// //   measureName.push_back("BTAG" + algo_ + "L");
 
-  // Tell DB you want the SF. These are not user defined and need to be exact
-  measureType.push_back("BTAGLEFFCORR");
-  measureType.push_back("BTAGBEFFCORR");
-  measureType.push_back("BTAGLEFFCORR");
-  measureType.push_back("BTAGBEFFCORR");
-  measureType.push_back("BTAGLEFF");
-  measureType.push_back("BTAGLEFF");
-//   measureType.push_back("BTAGBEFF");
-//   measureType.push_back("BTAGBEFF");
+//   // Tell DB you want the SF. These are not user defined and need to be exact
+//   measureType.push_back("BTAGLEFFCORR");
+//   measureType.push_back("BTAGBEFFCORR");
+//   measureType.push_back("BTAGLEFFCORR");
+//   measureType.push_back("BTAGBEFFCORR");
+//   measureType.push_back("BTAGLEFF");
+//   measureType.push_back("BTAGLEFF");
+// //   measureType.push_back("BTAGBEFF");
+// //   measureType.push_back("BTAGBEFF");
+
+  for(int iwp=0; iwp<2; iwp++) {//loop over loose, medium
+     string wp(0==iwp ? "L" : "M");
+     measure.push_back(pair<string,string>(source_ + "WPBTAG" + algo_ + wp, "BTAGBEFFCORR"));//b
+     measure.push_back(pair<string,string>(source_ + "WPBTAG" + algo_ + wp, "BTAGBERRCORR"));
+     measure.push_back(pair<string,string>(source_ + "WPBTAG" + algo_ + wp, "BTAGCEFFCORR"));//c
+     measure.push_back(pair<string,string>(source_ + "WPBTAG" + algo_ + wp, "BTAGCERRCORR"));
+     measure.push_back(pair<string,string>("MISTAG" + algo_ + wp + period_, "BTAGLEFFCORR"));//light
+     measure.push_back(pair<string,string>("MISTAG" + algo_ + wp + period_, "BTAGLERRCORR"));
+     measure.push_back(pair<string,string>("MISTAG" + algo_ + wp + period_, "BTAGLEFF"));//mistag rate
+  }
 
 }
 
