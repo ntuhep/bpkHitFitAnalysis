@@ -150,16 +150,29 @@ createSplitJets::endJob()
 bool 
 createSplitJets::shouldSplit(int jet)
 {
-   if(_debug) std::cout << "\tSplit jet " << jet << "? mass,1,2=" 
-                        << _inWJets.Mass[jet] << "," 
-                        << _inWJets.MassD1[jet] << "," 
-                        << _inWJets.MassD2[jet] << std::endl;
+   int sSubjets = _inWJets.SubjetsIdxStart[jet];
+   int nSubjets = _inWJets.NSubjets[jet];
+
+   if(_debug) {
+      std::cout << "\tSplit jet " << jet << "? mass,sSub,nSub,1,2,..=" 
+                << _inWJets.Mass[jet] << "," 
+                << sSubjets << "," << nSubjets << ",";
+      for(int i=sSubjets; i<sSubjets+nSubjets; i++)
+         std::cout << _inWJets.SubjetMass->at(i) << ","; 
+      std::cout << std::endl;
+   }
+
+   if(nSubjets !=2) {
+      std::cout << "WARNING: don't have 2 subjets. Getting out of here.\n";
+      return false;
+   }
+
    double mass = _inWJets.Mass[jet];
    if(mass < _wMassLo) return false;
    if(mass > _wMassHi) return false;
 
    if(_massDropMax<0.) return true; //let <0 mean don't cut on mass drop
-   double massDrop = (_inWJets.MassD1[jet]>_inWJets.MassD2[jet]) ? _inWJets.MassD1[jet]/mass : _inWJets.MassD2[jet]/mass;
+   double massDrop = (_inWJets.SubjetMass->at(sSubjets)>_inWJets.SubjetMass->at(sSubjets+1)) ? _inWJets.SubjetMass->at(sSubjets)/mass : _inWJets.SubjetMass->at(sSubjets+1)/mass;
    if(massDrop>_massDropMax) return false;
 
    return true;
@@ -173,35 +186,38 @@ createSplitJets::insertSplitJets(int idx_w, int idx_std, bool isMC)
                         << " isMC? " << isMC 
                         << " to index " << _outJets.Size << std::endl;
 
+   const int sSubjets = _inWJets.SubjetsIdxStart[idx_w];
+   const int nSubjets = _inWJets.NSubjets[idx_w];
+
    //split wide jet
-   TLorentzVector jW, jS[2];
-   jS[0].SetPtEtaPhiM(_inWJets.PtD1[idx_w], _inWJets.EtaD1[idx_w], _inWJets.PhiD1[idx_w], _inWJets.MassD1[idx_w]);
-   jS[1].SetPtEtaPhiM(_inWJets.PtD2[idx_w], _inWJets.EtaD2[idx_w], _inWJets.PhiD2[idx_w], _inWJets.MassD2[idx_w]);
-   jW = jS[0] + jS[1];
+   TLorentzVector jW, jS[nSubjets];
+   jW.SetPtEtaPhiM(0,0,0,0);
+   for(int iSub=0; iSub<nSubjets; iSub++) {
+      jS[iSub].SetPtEtaPhiM(_inWJets.SubjetPt->at(sSubjets+iSub),
+                            _inWJets.SubjetEta->at(sSubjets+iSub),
+                            _inWJets.SubjetPhi->at(sSubjets+iSub),
+                            _inWJets.SubjetMass->at(sSubjets+iSub));
+      jW += jS[iSub];
+   }
    double rescale = _inWJets.Pt[idx_w]/jW.Pt();
          
-   jS[0].SetPtEtaPhiM(_inWJets.PtD1[idx_w] * rescale, _inWJets.EtaD1[idx_w], _inWJets.PhiD1[idx_w], _inWJets.MassD1[idx_w] * rescale);
-   jS[1].SetPtEtaPhiM(_inWJets.PtD2[idx_w] * rescale, _inWJets.EtaD2[idx_w], _inWJets.PhiD2[idx_w], _inWJets.MassD2[idx_w] * rescale);
+   for(int iSub=0; iSub<nSubjets; iSub++) {
+      jS[iSub].SetPtEtaPhiM(_inWJets.SubjetPt->at(sSubjets+iSub)*rescale,
+                            _inWJets.SubjetEta->at(sSubjets+iSub),
+                            _inWJets.SubjetPhi->at(sSubjets+iSub),
+                            _inWJets.SubjetMass->at(sSubjets+iSub)*rescale);
+   }
 
    //insert split jets into collection
-   for(int iS=0; iS<2; iS++) {//loop over 2 daughters
+   for(int iS=0; iS<nSubjets; iS++) {//loop over 2 daughters
       _outJets.Index[_outJets.Size] = _outJets.Size;
       _outJets.Unc[_outJets.Size] = 1 + iS;  //use to indicate jet is split jet
 
-      if(iS==0) {
-         _outJets.Et  [_outJets.Size] = _inWJets.EtD1  [idx_w] * rescale;
-         _outJets.Pt  [_outJets.Size] = _inWJets.PtD1  [idx_w] * rescale;
-         _outJets.Phi [_outJets.Size] = _inWJets.PhiD1 [idx_w];
-         _outJets.Eta [_outJets.Size] = _inWJets.EtaD1 [idx_w];
-         _outJets.Mass[_outJets.Size] = _inWJets.MassD1[idx_w] * rescale;
-      }
-      else {
-         _outJets.Et  [_outJets.Size] = _inWJets.EtD2  [idx_w] * rescale;
-         _outJets.Pt  [_outJets.Size] = _inWJets.PtD2  [idx_w] * rescale;
-         _outJets.Phi [_outJets.Size] = _inWJets.PhiD2 [idx_w];
-         _outJets.Eta [_outJets.Size] = _inWJets.EtaD2 [idx_w];
-         _outJets.Mass[_outJets.Size] = _inWJets.MassD2[idx_w] * rescale;
-      }
+      _outJets.Et  [_outJets.Size] = _inWJets.SubjetEt->at(sSubjets+iS) * rescale;
+      _outJets.Pt  [_outJets.Size] = _inWJets.SubjetPt->at(sSubjets+iS) * rescale;
+      _outJets.Phi [_outJets.Size] = _inWJets.SubjetPhi->at(sSubjets+iS);
+      _outJets.Eta [_outJets.Size] = _inWJets.SubjetEta->at(sSubjets+iS);
+      _outJets.Mass[_outJets.Size] = _inWJets.SubjetMass->at(sSubjets+iS);
 
       _outJets.Px    [_outJets.Size] = jS[iS].Px();
       _outJets.Py    [_outJets.Size] = jS[iS].Py();
@@ -218,8 +234,10 @@ createSplitJets::insertSplitJets(int idx_w, int idx_std, bool isMC)
       _outJets.NHF          [_outJets.Size] = _inStdJets.NHF          [idx_std];
       _outJets.NEF          [_outJets.Size] = _inStdJets.NEF          [idx_std];
       _outJets.CHF          [_outJets.Size] = _inStdJets.CHF          [idx_std];
-      _outJets.CombinedSVBJetTags[_outJets.Size] = _inStdJets.CombinedSVBJetTags[idx_std];
-      _outJets.Area         [_outJets.Size] = _inStdJets.Area         [idx_std];
+      //_outJets.CombinedSVBJetTags[_outJets.Size] = _inStdJets.CombinedSVBJetTags[idx_std];
+      //_outJets.Area         [_outJets.Size] = _inStdJets.Area         [idx_std];
+      _outJets.CombinedSVBJetTags[_outJets.Size] = _inWJets.SubjetCombinedSVBJetTags->at(sSubjets+iS);
+      _outJets.Area         [_outJets.Size] = _inWJets.SubjetArea->at(sSubjets+iS);
 
       if(isMC) {
          _outJets.GenFlavor[_outJets.Size] = _inStdJets.GenFlavor[idx_std];
@@ -228,15 +246,13 @@ createSplitJets::insertSplitJets(int idx_w, int idx_std, bool isMC)
          //   approx
          _outJets.GenJetEta[_outJets.Size] = _outJets.Eta[_outJets.Size];
          _outJets.GenJetPhi[_outJets.Size] = _outJets.Phi[_outJets.Size];
-         if(iS==0)
-            _outJets.GenJetPt[_outJets.Size] = _inStdJets.GenJetPt[idx_std]*(_inWJets.PtD1[idx_w]/_inWJets.Pt[idx_w]);
-         else
-            _outJets.GenJetPt[_outJets.Size] = _inStdJets.GenJetPt[idx_std]*(_inWJets.PtD2[idx_w]/_inWJets.Pt[idx_w]);
+         _outJets.GenJetPt[_outJets.Size]  = _inWJets.GenJetPt[idx_std]*(_inWJets.SubjetPt->at(sSubjets+iS)/_inWJets.Pt[idx_w]);
       }
 
       double scf = _outJets.Pt[_outJets.Size]/_inWJets.Pt[idx_w];
 
-      _outJets.PtCorrRaw  [_outJets.Size] = _inWJets.PtCorrRaw  [idx_w]*scf;
+      //_outJets.PtCorrRaw  [_outJets.Size] = _inWJets.PtCorrRaw  [idx_w]*scf;
+      _outJets.PtCorrRaw  [_outJets.Size] = _inWJets.SubjetPtUncorr->at(sSubjets+iS);
       _outJets.PtCorrL2   [_outJets.Size] = _inWJets.PtCorrL2   [idx_w]*scf;
       _outJets.PtCorrL3   [_outJets.Size] = _inWJets.PtCorrL3   [idx_w]*scf;
       _outJets.PtCorrL7g  [_outJets.Size] = _inWJets.PtCorrL7g  [idx_w]*scf;
@@ -311,16 +327,16 @@ createSplitJets::insertJetCopy(int idx)
    _outJets.Mass[_outJets.Size] = _inStdJets.Mass[idx];
    _outJets.Area[_outJets.Size] = _inStdJets.Area[idx];
 
-   _outJets.MassD1[_outJets.Size] = _inStdJets.MassD1[idx];
-   _outJets.MassD2[_outJets.Size] = _inStdJets.MassD2[idx];
-   _outJets.PtD1[_outJets.Size] = _inStdJets.PtD1[idx];
-   _outJets.PtD2[_outJets.Size] = _inStdJets.PtD2[idx];
-   _outJets.EtD1[_outJets.Size] = _inStdJets.EtD1[idx];
-   _outJets.EtD2[_outJets.Size] = _inStdJets.EtD2[idx];
-   _outJets.EtaD1[_outJets.Size] = _inStdJets.EtaD1[idx];
-   _outJets.EtaD2[_outJets.Size] = _inStdJets.EtaD2[idx];
-   _outJets.PhiD1[_outJets.Size] = _inStdJets.PhiD1[idx];
-   _outJets.PhiD2[_outJets.Size] = _inStdJets.PhiD2[idx];
+//    _outJets.MassD1[_outJets.Size] = _inStdJets.MassD1[idx];
+//    _outJets.MassD2[_outJets.Size] = _inStdJets.MassD2[idx];
+//    _outJets.PtD1[_outJets.Size] = _inStdJets.PtD1[idx];
+//    _outJets.PtD2[_outJets.Size] = _inStdJets.PtD2[idx];
+//    _outJets.EtD1[_outJets.Size] = _inStdJets.EtD1[idx];
+//    _outJets.EtD2[_outJets.Size] = _inStdJets.EtD2[idx];
+//    _outJets.EtaD1[_outJets.Size] = _inStdJets.EtaD1[idx];
+//    _outJets.EtaD2[_outJets.Size] = _inStdJets.EtaD2[idx];
+//    _outJets.PhiD1[_outJets.Size] = _inStdJets.PhiD1[idx];
+//    _outJets.PhiD2[_outJets.Size] = _inStdJets.PhiD2[idx];
 
    _outJets.Size++;
 }
