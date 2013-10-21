@@ -311,8 +311,8 @@ bpkHitFitAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 // 				if(btag_sf == -999 || btag_eff == -999 || btag_uti.Btag_SF_ERR == -999) std::cout << "SF = -999, Please Check" << std::endl;
 				double btag_sf = btsf->getSF("BTAG" + bTagAlgo + "M",ijet);
 				double btag_eff = btsf->BtagEff_[0];//getSF("BTAG" + bTagAlgo + "Meff",ijet);
-				double bmistag_sf = btsf->getSF("MISTAG" + bTagAlgo + "M",ijet);
-				double bmistag_eff = btsf->getSF("MISTAG" + bTagAlgo + "Meff",ijet);
+				//double bmistag_sf = btsf->getSF("MISTAG" + bTagAlgo + "M",ijet);
+				//double bmistag_eff = btsf->getSF("MISTAG" + bTagAlgo + "Meff",ijet);
 				if(debug) {
 	   				std::cout << "Jet " << ijet << ": Et,Eta,PdgId,tag= " << jetmom[ijet].first << "," << jetmom[ijet].second << "," << JetInfo.GenFlavor[ijet] << "," << jetisbtag[ijet] << std::endl;
 					//std::cout << " btageff_sf=" << btag_sf << " bmistag_sf=" << bmistag_sf << " bmistag_eff=" << bmistag_eff << std::endl;
