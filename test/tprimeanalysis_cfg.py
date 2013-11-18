@@ -38,11 +38,13 @@ from MyAna.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *
 debug = cms.untracked.bool(False)
 
 useSplitJets = False
+decayToGeneric = False # T->Wq as opposed to T->Wb. Also for T->Zq
+hadDecayToZ = False # allow hadronic side to decay to Z: T->Zq
+
 
 jetBranches = 'PFJetInfo'
 if useSplitJets:
     jetBranches = 'SplitJetInfo'
-
 
 ObjectSelection = defaultObjectParameters.clone(
     Debug = debug,
@@ -74,10 +76,19 @@ BTagSFUtil = defaultBTagSFUtilParameters.clone(
     Debug         = debug
     )   
 
+
+configFileHitFit = 'MyAna/bpkHitFit/data/setting/RunHitFitConfiguration.txt'
+if decayToGeneric:
+   configFileHitFit = 'MyAna/bpkHitFit/data/setting/RunHitFitConfiguration_bMassless.txt'
+hadMass = 80.4
+if hadDecayToZ:
+   hadMass = 91.2
+
 HitFit = defaultHitFitParameters.clone(
     Debug = debug,
-	Default = cms.untracked.FileInPath("MyAna/bpkHitFit/data/setting/RunHitFitConfiguration.txt"),
+	Default = cms.untracked.FileInPath(configFileHitFit),
     JetCorrectionLevel = cms.untracked.string('L3'),
+	HadWMass = cms.untracked.double(hadMass)		
     NuSolution = cms.untracked.int32(2),
     #TopMass = cms.untracked.double(172.9),
     #MaxNJet = cms.untracked.uint32(6)
