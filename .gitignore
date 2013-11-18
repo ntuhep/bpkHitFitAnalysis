@@ -1,0 +1,5 @@
+#Ignore compiled python
+python/*.pyc
+python/__init__.py
+test/*.root
+test/log.*
