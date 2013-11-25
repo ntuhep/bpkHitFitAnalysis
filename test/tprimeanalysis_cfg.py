@@ -35,11 +35,16 @@ from MyAna.bprimeKit.EventParameters_cfi import *
 from MyAna.bpkHitFitAnalysis.JetMetSystematicsParameters_cfi import *
 from MyAna.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *
 
+#these constants should probably be moved somewhere else
+mW = 80.4
+mZ = 91.2
+mH = 125.9
+
 debug = cms.untracked.bool(False)
 
 useSplitJets = False
 decayToGeneric = False # T->Wq as opposed to T->Wb. Also for T->Zq
-hadDecayToZ = False # allow hadronic side to decay to Z: T->Zq
+hadMass = mW # set to the mass of whatever boson we want for the hadronic decay
 
 
 jetBranches = 'PFJetInfo'
@@ -80,16 +85,13 @@ BTagSFUtil = defaultBTagSFUtilParameters.clone(
 configFileHitFit = 'MyAna/bpkHitFit/data/setting/RunHitFitConfiguration.txt'
 if decayToGeneric:
    configFileHitFit = 'MyAna/bpkHitFit/data/setting/RunHitFitConfiguration_bMassless.txt'
-hadMass = 80.4
-if hadDecayToZ:
-   hadMass = 91.2
 
 HitFit = defaultHitFitParameters.clone(
     Debug = debug,
 	Default = cms.untracked.FileInPath(configFileHitFit),
     JetCorrectionLevel = cms.untracked.string('L3'),
-	HadWMass = cms.untracked.double(hadMass)		
-    NuSolution = cms.untracked.int32(2),
+	HadWMass = cms.untracked.double(hadMass),
+    NuSolution = cms.untracked.int32(2)
     #TopMass = cms.untracked.double(172.9),
     #MaxNJet = cms.untracked.uint32(6)
     )
@@ -100,7 +102,7 @@ process.demo = cms.EDAnalyzer(
     MaxEvents        = cms.untracked.int32(-1),#set to -1 for all events
     OutputFile       = cms.untracked.string(options.outFile),
     Debug            = debug,
-    Channels         = cms.untracked.vint32(13),#11 for electron, 13 for muon, can do both
+    Channels         = cms.untracked.vint32(11,13),#11 for electron, 13 for muon, can do both
     LeptonCollection = cms.untracked.string('PFLepInfo'),
     JetCollection    = cms.untracked.string(jetBranches),
     CutFlow              = cms.untracked.bool(True),#provide histogram showing how many events passed each selection level
