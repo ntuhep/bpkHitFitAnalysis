@@ -67,5 +67,5 @@ cvs co -r v1-2-3 -d QuarkGluonTagger/EightTeV UserCode/tomc/QuarkGluonTagger/Eig
 git clone git@github.com:ntuhep/bpkHitFitAnalysis.git MyAna/bpkHitFitAnalysis
 sed -i 's/<flags/#<flags/g' MyAna/bprimeKit/BuildFile.xml
 
-#scramv1 b -j 8
+scramv1 b -j 8
 
