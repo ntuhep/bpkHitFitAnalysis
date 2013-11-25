@@ -35,10 +35,12 @@ cvs co -r HEAD UserCode/sixie/Muon/MuonAnalysisTools/interface/MuonEffectiveArea
 
 #HITFIT
 cvs co TopQuarkAnalysis/TopHitFit
-git clone git@github.com:ntuhep/bpkHitFit.git MyAna/bpkHitFit
+#git clone git@github.com:ntuhep/bpkHitFit.git MyAna/bpkHitFit
+git clone https://github.com/ntuhep/bpkHitFit.git MyAna/bpkHitFit
 
 #bprimeKit
-git clone git@github.com:ntuhep/bprimeKit.git MyAna/bprimeKit
+#git clone git@github.com:ntuhep/bprimeKit.git MyAna/bprimeKit
+git clone https://github.com/ntuhep/bprimeKit.git MyAna/bprimeKit
 
 cvs co -r HEAD UserCode/NTUHEP/jetTools.py.txt 
 # doubleSecondaryVertexHighEffBJetTags_cfi.py  inclusiveSecondaryVertexFinderTagInfos_cfi.py
@@ -64,7 +66,8 @@ rm -r KStenson/TrackingFilters
 ## gluon tag
 cvs co -r v1-2-3 -d QuarkGluonTagger/EightTeV UserCode/tomc/QuarkGluonTagger/EightTeV
 
-git clone git@github.com:ntuhep/bpkHitFitAnalysis.git MyAna/bpkHitFitAnalysis
+#git clone git@github.com:ntuhep/bpkHitFitAnalysis.git MyAna/bpkHitFitAnalysis
+git clone https://github.com/ntuhep/bpkHitFitAnalysis.git MyAna/bpkHitFitAnalysis
 sed -i 's/<flags/#<flags/g' MyAna/bprimeKit/BuildFile.xml
 
 scramv1 b -j 8
