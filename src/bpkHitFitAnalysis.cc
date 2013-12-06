@@ -114,11 +114,11 @@ class bpkHitFitAnalysis : public edm::EDAnalyzer {
   double             bTagCut;
   double             btag_sigma;
 
-  TH1F* BTAG_SF;
-  TH1F* BTAG_EFF;
-  TH1F* BTAG_SF_LIGHT;
-  TH1F* BTAG_EFF_LIGHT;
-  TH1F* BTAG_EFF_LIGHT_PASS;
+//   TH1F* BTAG_SF;
+//   TH1F* BTAG_EFF;
+//   TH1F* BTAG_SF_LIGHT;
+//   TH1F* BTAG_EFF_LIGHT;
+//   TH1F* BTAG_EFF_LIGHT_PASS;
 
 };
 
@@ -249,11 +249,11 @@ bpkHitFitAnalysis::beginJob()
 	}
     if(debug) std::cout << "Finishing beginJob\n";
 	
-	BTAG_SF = new TH1F("BTag SF", "", 100, 0.9, 1.0);
-	BTAG_EFF = new TH1F("BTag EFF", "", 100, 1., 2.);
-	BTAG_SF_LIGHT = new TH1F("BTag SF LIGHT", "", 100, 0.8, 1.2);
-	BTAG_EFF_LIGHT = new TH1F("BTag EFF LIGHT", "", 100, 0., 0.1);
-	BTAG_EFF_LIGHT_PASS = new TH1F("BTag EFF LIGHT_PASS", "", 100, 0., 0.1);
+// 	BTAG_SF = new TH1F("BTag SF", "", 100, 0.9, 1.0);
+// 	BTAG_EFF = new TH1F("BTag EFF", "", 100, 1., 2.);
+// 	BTAG_SF_LIGHT = new TH1F("BTag SF LIGHT", "", 100, 0.8, 1.2);
+// 	BTAG_EFF_LIGHT = new TH1F("BTag EFF LIGHT", "", 100, 0., 0.1);
+// 	BTAG_EFF_LIGHT_PASS = new TH1F("BTag EFF LIGHT_PASS", "", 100, 0., 0.1);
 }
 
 
@@ -489,7 +489,7 @@ bpkHitFitAnalysis::endJob()
   }
 
   if(debug) std::cout << "Finishing endJob\n";
-  BTAG_SF->Write();BTAG_EFF->Write();BTAG_SF_LIGHT->Write();BTAG_EFF_LIGHT->Write();BTAG_EFF_LIGHT_PASS->Write();
+  //BTAG_SF->Write();BTAG_EFF->Write();BTAG_SF_LIGHT->Write();BTAG_EFF_LIGHT->Write();BTAG_EFF_LIGHT_PASS->Write();
 }
 
 //define this as a plug-in
