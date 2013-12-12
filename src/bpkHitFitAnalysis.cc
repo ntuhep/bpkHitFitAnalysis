@@ -33,6 +33,7 @@
 
 #include "TH1.h"
 #include "TFile.h"
+#include "TKey.h"
 #include "TChain.h"
 #include "time.h"
 
@@ -76,6 +77,7 @@ class bpkHitFitAnalysis : public edm::EDAnalyzer {
   std::string        outFile;
   TFile              *newfile;
   TTree              *newtree;
+  int                nAutoSave;
 
   EvtInfoBranches    EvtInfo;
   VertexInfoBranches VtxInfo;
@@ -140,6 +142,7 @@ bpkHitFitAnalysis::bpkHitFitAnalysis(const edm::ParameterSet& iConfig)
   inFile  = iConfig.getUntrackedParameter<std::string>("InputFile");
   maxEvents = iConfig.getUntrackedParameter<int>("MaxEvents",-1);
   outFile = iConfig.getUntrackedParameter<std::string>("OutputFile");
+  nAutoSave = iConfig.getUntrackedParameter<int>("NAutoSave",0);
   debug = iConfig.getUntrackedParameter<bool>("Debug",false);
   HitFitParameters = iConfig.getParameter<edm::ParameterSet>("HitFitParameters");
   SelectionParameters = iConfig.getParameter<edm::ParameterSet>("SelectionParameters");
@@ -178,11 +181,6 @@ bpkHitFitAnalysis::~bpkHitFitAnalysis()
 
   newfile->Close();
   delete newfile;
-
-//   if(skimNtuple || runHitFit) {
-//     delete newtree;
-//     if(debug) std::cout << "deleted newtree\n";
-//   }
 
   if(debug) std::cout << "destruction done\n";
 }
@@ -223,6 +221,7 @@ bpkHitFitAnalysis::beginJob()
    newfile = new TFile(outFile.c_str(),"recreate");
    if(skimNtuple || runHitFit) {
      newtree = chain->CloneTree(0);
+     if(nAutoSave!=0) newtree->SetAutoSave(nAutoSave);
 
      if(runHitFit) {
        hitfit = new doHitFit(HitFitParameters,EvtInfo,LepInfo,JetInfo,GenInfo);
@@ -470,6 +469,11 @@ bpkHitFitAnalysis::endJob()
     newfile->mkdir("bprimeKit");
     newfile->cd("bprimeKit");
 
+    TKey* key = (TKey*)newfile->GetListOfKeys()->FindObject("root");
+    if(key) {
+       key->Delete();
+       delete key;
+    }
     newtree->Write();
   }
 
