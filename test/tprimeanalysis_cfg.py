@@ -6,7 +6,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing('python')
 
 options.register('inFile',
-				 'file:/afs/cern.ch/work/g/grundler/private/bprimeKit/tpWb_ntupl532p4_500-1.root',
+				 'results.root',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
                  "Input file name")
@@ -18,7 +18,7 @@ options.register('outFile',
                  "Output file name")
 
 options.parseArguments()
-
+process.Timing = cms.Service("Timing")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
 process.load("CondCore.DBCommon.CondDBCommon_cfi")
@@ -69,7 +69,7 @@ EventSelection = defaultEventParameters.clone(
 JetMetSystematics = defaultJetMetSystematicsParameters.clone(
 	JECfile = cms.untracked.string('Summer12_V2_DATA_AK5PF_UncertaintySources.txt'),
 	#JECfile = cms.untracked.string('/afs/cern.ch/user/t/twang/public/GR_P_V40_AN2_Uncertainty_AK5PF.txt'),
-    Type = cms.untracked.string('jer'),
+    Type = cms.untracked.string('None'),
     Scale = cms.untracked.double(0.),
     Debug = debug
     )
@@ -91,9 +91,9 @@ HitFit = defaultHitFitParameters.clone(
 	Default = cms.untracked.FileInPath(configFileHitFit),
     JetCorrectionLevel = cms.untracked.string('L3'),
 	HadWMass = cms.untracked.double(hadMass),
-    NuSolution = cms.untracked.int32(2)
+    NuSolution = cms.untracked.int32(2),
     #TopMass = cms.untracked.double(172.9),
-    #MaxNJet = cms.untracked.uint32(6)
+    MaxNJet = cms.untracked.uint32(5)
     )
 
 process.demo = cms.EDAnalyzer(
@@ -101,11 +101,12 @@ process.demo = cms.EDAnalyzer(
     InputFile        = cms.untracked.string(options.inFile),
     MaxEvents        = cms.untracked.int32(-1),#set to -1 for all events
     OutputFile       = cms.untracked.string(options.outFile),
+	NAutoSave        = cms.untracked.int32(0),#How often to AutoSave (0 leaves default)
     Debug            = debug,
     Channels         = cms.untracked.vint32(11,13),#11 for electron, 13 for muon, can do both
     LeptonCollection = cms.untracked.string('PFLepInfo'),
     JetCollection    = cms.untracked.string(jetBranches),
-    CutFlow              = cms.untracked.bool(True),#provide histogram showing how many events passed each selection level
+    CutFlow              = cms.untracked.bool(False),#provide histogram showing how many events passed each selection level
     Skim                 = cms.untracked.bool(False),
     SelectionParameters  = EventSelection.clone(),
     RunHitFit            = cms.untracked.bool(True),#run HitFit
