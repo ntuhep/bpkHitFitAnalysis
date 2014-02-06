@@ -3,6 +3,7 @@
 <use name="FWCore/PluginManager"/>
 <use name="FWCore/ParameterSet"/>
 <use name="MyAna/bprimeKit"/>
+<use name="MyAna/bpkHitFit"/>
 <use name="RecoBTag/PerformanceDB"/>
 <use name="CondFormats/PhysicsToolsObjects"/>
 <use name="RecoBTag/Records"/>

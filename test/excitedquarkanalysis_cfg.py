@@ -34,7 +34,7 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )#don't c
 
 process.source = cms.Source("EmptySource")
 
-from MyAna.bprimeKit.HitFitParameters_cfi import *
+from MyAna.bpkHitFit.HitFitParameters_cfi import *
 from MyAna.bprimeKit.EventParameters_cfi import *
 from MyAna.bpkHitFitAnalysis.JetMetSystematicsParameters_cfi import *
 from MyAna.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *

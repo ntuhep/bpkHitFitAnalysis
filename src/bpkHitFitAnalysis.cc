@@ -39,10 +39,10 @@
 
 #include "MyAna/bprimeKit/interface/format.h"
 #include "MyAna/bprimeKit/interface/bpkUtils.h"
-#include "MyAna/bprimeKit/interface/HitFitInfoBranches.h"
-#include "MyAna/bprimeKit/interface/doHitFit.h"
 #include "MyAna/bprimeKit/interface/objectSelector.h"
 #include "MyAna/bprimeKit/interface/eventSelector.h"
+#include "MyAna/bpkHitFit/interface/HitFitInfoBranches.h"
+#include "MyAna/bpkHitFit/interface/doHitFit.h"
 
 #include "MyAna/bpkHitFitAnalysis/interface/jetMetSystematics.h"
 #include "MyAna/bpkHitFitAnalysis/interface/BTagSFUtil-tprime.h"
