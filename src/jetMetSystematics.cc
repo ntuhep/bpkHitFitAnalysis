@@ -145,10 +145,22 @@ void jetMetSystematics::scale() {
                             _jets->PtCorrRaw[j]*sin(_jets->Phi[j]) );
       }
 
-      _evt->PFMETx = metVec.X();
-      _evt->PFMETy = metVec.Y();
-      _evt->PFMET = metVec.Mod();
-      _evt->PFMETPhi = TVector2::Phi_mpi_pi(metVec.Phi());
+      if(metVec.Mod() > 0.) {
+         _evt->PFMETx = metVec.X();
+         _evt->PFMETy = metVec.Y();
+         _evt->PFMET = metVec.Mod();
+         _evt->PFMETPhi = TVector2::Phi_mpi_pi(metVec.Phi());
+      }
+      else {
+         std::cout << "\t*** jetMetSystematics: protection for metVec.Mod() = "<< metVec.Mod() 
+                   << "\tmetVec.X() = "<<  metVec.X() << "\tmetVec.Y() = " << metVec.Y() << std::endl;
+         std::cout << "\t*** Original MET: _evt->PFMET  = "<< _evt->PFMET   
+                   << "\t_evt->PFMETx = "<<  _evt->PFMETx << "\t_evt->PFMETy = " << _evt->PFMETy << std::endl;
+         _evt->PFMETx = 0.;
+         _evt->PFMETy = 0.;
+         _evt->PFMET = 0.;
+         _evt->PFMETPhi = 0.;
+      }
    }//Unclustered energy
 
 }
