@@ -38,8 +38,6 @@ class jetMetSystematics {
       double jerScale(const int index, const double sigma);
       void   setType (std::string s);
 
-//       const int nEtaBins;
-//       const int nPtBins;
       std::string _jecFile;
       std::string stype;
       Systematic _type;
@@ -47,17 +45,6 @@ class jetMetSystematics {
       EvtInfoBranches* _evt;
       JetInfoBranches* _jets;
       LepInfoBranches* _leps;
-
-//       double *etaBins, *ptBins;
-//       double *jesPlus, *jesMinus;
-
-//       double c_sw;// = 0.015;
-//       double e_pu;// = 0.75;
-//       //double e_pu123;// = 0.2;
-//       double ja;//   = 0.8;
-//       double avgpu;// = 2.2;
-//       double c_bjes1;// = 0.02;
-//       double c_bjes2;// = 0.03;
 
       double _scale;
 

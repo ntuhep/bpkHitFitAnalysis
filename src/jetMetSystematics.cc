@@ -20,9 +20,7 @@ const string jetMetSystematics::sType[]= {
 
 jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
                                      EvtInfoBranches &evt, JetInfoBranches &jet, LepInfoBranches &lep)
-   : //nEtaBins(iConfig.getUntrackedParameter<int>("nEtaBins",28)),
-     //nPtBins(iConfig.getUntrackedParameter<int>("nPtBins",39)),
-     _jecFile(iConfig.getUntrackedParameter<std::string>("JECfile")),
+   : _jecFile(iConfig.getUntrackedParameter<std::string>("JECfile")),
      stype(iConfig.getUntrackedParameter<std::string>("Type")),
      _evt(&evt),
      _jets(&jet),
@@ -38,17 +36,6 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
 {
 
    setType(stype);
-//    etaBins  = new double[nEtaBins];
-//    ptBins   = new double[nEtaBins*nPtBins];
-//    jesPlus  = new double[nEtaBins*nPtBins];
-//    jesMinus = new double[nEtaBins*nPtBins];
-
-//    c_sw = iConfig.getUntrackedParameter<double>("swUncertainty",0.015);
-//    e_pu = iConfig.getUntrackedParameter<double>("puUncertainty",0.2);
-//    ja   = iConfig.getUntrackedParameter<double>("jetArea",0.8);
-//    avgpu = iConfig.getUntrackedParameter<double>("averagePU",2.2);
-//    c_bjes1 = iConfig.getUntrackedParameter<double>("bjetUncertainty",0.02);
-//    c_bjes2 = iConfig.getUntrackedParameter<double>("bjetUncertainty2",0.03);
 
    _scale = iConfig.getUntrackedParameter<double>("Scale",0.);
 
@@ -57,25 +44,6 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
    if(JES == _type) {
       ifstream f(_jecFile.c_str());
       if(f) {
-//          //check if first line is a header
-//          std::streampos start = f.tellg();
-//          std::string teststr;
-//          f >> teststr;
-//          std::istringstream inpStream(teststr);
-//          double value = 0.0;
-//          if(inpStream >> value) {
-//             f.seekg(start); //that was the first value, go back
-//          }
-//          else {
-//             getline(f,teststr);//have header, go to next line
-//          }
-//          for(int etaB = 0; etaB < nEtaBins; etaB++) {
-//             double temp1, temp2;
-//             f >> etaBins[etaB] >> temp1 >> temp2;
-//             for(int ptB = 0; ptB < nPtBins; ptB++)
-//                f >> ptBins[etaB*nPtBins+ptB] >> jesPlus[etaB*nPtBins+ptB] >> jesMinus[etaB*nPtBins+ptB];
-//          }
-
          JetCorrectorParameters* jcp = new JetCorrectorParameters(_jecFile,_jesUncType);
          _jesSigma = new JetCorrectionUncertainty(*jcp);
       }
@@ -84,20 +52,6 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
          assert(false);
       }
    }
-
-//    if(_debug) {
-//       if(JES == _type) {
-//          for(int etaB = 0; etaB < nEtaBins; etaB++) {
-//             std::cout << "Eta: " << etaBins[etaB] << std::endl;
-//             for(int ptB = 0; ptB < nPtBins; ptB++) {
-//                std::cout << "\tpt=" << ptBins[etaB*nPtBins+ptB];
-//                std::cout << " +Sigma=" << jesPlus[etaB*nPtBins+ptB];
-//                std::cout << " -Sigma=" << jesMinus[etaB*nPtBins+ptB];
-//             }
-//             std:: cout << std::endl;
-//          }
-//       }
-//    }
 
 }
 
@@ -202,29 +156,6 @@ double jetMetSystematics::jesScale(const int index, const double sigma) {
    if(sigma==0.) return 1.;//why are we even here?
    if(_jets->Pt[index]<=0.) return 0.;//shouldn't happen, but just in case
    //https://twiki.cern.ch/twiki/bin/view/CMS/JECUncertaintySources
-//    int etaB;
-//    for(etaB=nEtaBins-1; etaB>-1; etaB--) {
-//       if(etaBins[etaB] < _jets->Eta[index]) break;
-//    }
-//    //printf("jet eta=%2.3f, etaBin=%i, range:%2.3f - %2.3f\n",_jets->Eta[index],etaB,etaBins[etaB],etaBins[etaB+1]);
-
-//    int ptB;
-//    for(ptB=nPtBins-1; ptB>-1; ptB--) {
-//       if(ptBins[etaB*nPtBins+ptB] < _jets->Pt[index]) break;
-//    }
-
-
-
-//    double unc = (sigma > 0.) ? jesPlus[etaB*nPtBins+ptB] : jesMinus[etaB*nPtBins+ptB];
-
-//    double c_pu = e_pu*ja*avgpu/ _jets->Pt[index];
-//    double cor2 = c_sw*c_sw + c_pu*c_pu;
-//    //follow the recipe from twiki
-//    if(_evt->McFlag && abs(_jets->GenFlavor[index]) == 5){	
-//       if(abs(_jets->Eta[index]) < 2.0 && _jets->Pt[index] > 50 && _jets->Pt[index] < 200) { cor2 = cor2 + c_bjes1*c_bjes1; }
-//       else { cor2 = cor2 + c_bjes2*c_bjes2; }
-//    }
-//    unc = sqrt(unc*unc + cor2);
 
    _jesSigma->setJetPt(_jets->Pt[index]);
    _jesSigma->setJetEta(_jets->Eta[index]);
@@ -268,10 +199,6 @@ void jetMetSystematics::setType(std::string s) {
    for(Systematic i=NOSYS; i<nSystematics; i=static_cast<Systematic>(i+1)) {
       if(boost::iequals(s,sType[i])) _type = i;
    }
-//    if(boost::iequals(s,"jes")) _type = JES;
-//    if(boost::iequals(s,"jer")) _type = JER;
-//    if(boost::iequals(s,"met")) _type = MET;
-//    if(boost::iequals(s,"unc")) _type = UNC;
    
    std::cout << "jetMetSystematics: systematic type: " << sType[_type] << std::endl;
 }
