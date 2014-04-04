@@ -60,6 +60,8 @@ class jetMetSystematics {
       std::vector<double> _jerSigmaSym, _jerSigmaNeg, _jerSigmaPos;//uncertainties on ratio
       double _jerMinGenJetPt;
 
+      bool _skipUNC;
+
       bool   _debug;
 
 };

@@ -37,6 +37,8 @@
 #include "TChain.h"
 #include "time.h"
 
+#include <cassert>
+
 #include "MyAna/bprimeKit/interface/format.h"
 #include "MyAna/bprimeKit/interface/bpkUtils.h"
 #include "MyAna/bprimeKit/interface/objectSelector.h"
@@ -82,21 +84,21 @@ class bpkHitFitAnalysis : public edm::EDAnalyzer {
   EvtInfoBranches    EvtInfo;
   VertexInfoBranches VtxInfo;
   LepInfoBranches    LepInfo;
-  JetInfoBranches    JetInfo;
+   std::vector<JetInfoBranches> JetInfo;
   GenInfoBranches    GenInfo;
   HitFitInfoBranches HitFitInfo;
 
   doHitFit           *hitfit;
   eventSelector      *eSelector;
-  jetMetSystematics  *jmsScaler;
+   std::vector<jetMetSystematics*>  jmsScalers;
 
   edm::ParameterSet        HitFitParameters;
   edm::ParameterSet        SelectionParameters;
-  edm::ParameterSet        JetMetSystParameters;
+   std::vector<edm::ParameterSet>   JetMetSystParameters;
   edm::ParameterSet        BTagSFUtilParameters;
 
   std::string              lepcollection;
-  std::string              jetcollection;
+   std::vector<std::string> jetcollections;
 
   bool                     doCutFlow;
   bool                     skimNtuple;
@@ -146,11 +148,11 @@ bpkHitFitAnalysis::bpkHitFitAnalysis(const edm::ParameterSet& iConfig)
   debug = iConfig.getUntrackedParameter<bool>("Debug",false);
   HitFitParameters = iConfig.getParameter<edm::ParameterSet>("HitFitParameters");
   SelectionParameters = iConfig.getParameter<edm::ParameterSet>("SelectionParameters");
-  JetMetSystParameters = iConfig.getParameter<edm::ParameterSet>("JetMetSystematicsParameters");
+  JetMetSystParameters = iConfig.getParameter< std::vector<edm::ParameterSet> >("JetMetSystematicsParameters");
   BTagSFUtilParameters = iConfig.getParameter<edm::ParameterSet>("BTagSFUtilParameters");
 
   lepcollection = iConfig.getUntrackedParameter<std::string>("LeptonCollection");
-  jetcollection = iConfig.getUntrackedParameter<std::string>("JetCollection");
+  jetcollections = iConfig.getUntrackedParameter< std::vector<std::string> >("JetCollections");
 
   doCutFlow = iConfig.getUntrackedParameter<bool>("CutFlow",false);
   skimNtuple = iConfig.getUntrackedParameter<bool>("Skim",false);
@@ -177,7 +179,7 @@ bpkHitFitAnalysis::~bpkHitFitAnalysis()
 
   delete hitfit;
   delete eSelector;
-  delete jmsScaler;
+  //delete jmsScalers;
 
   newfile->Close();
   delete newfile;
@@ -203,7 +205,9 @@ bpkHitFitAnalysis::beginJob()
    EvtInfo.Register(chain);
    VtxInfo.Register(chain);
    LepInfo.Register(chain,lepcollection);
-   JetInfo.Register(chain,jetcollection);
+   assert(jetcollections.size()>0);
+   for(unsigned i=0; i<jetcollections.size(); i++)
+      JetInfo[i].Register(chain,jetcollections[i]);
    GenInfo.Register(chain);
    UInt_t found;
    if(runHitFit) chain->SetBranchStatus("HitFitInfo*",0,&found);
@@ -211,10 +215,12 @@ bpkHitFitAnalysis::beginJob()
      chain->SetBranchStatus(stripBranches[i].c_str(),0,&found);
    }
 
-   eSelector = new eventSelector(SelectionParameters,EvtInfo,LepInfo,JetInfo,VtxInfo);
+   eSelector = new eventSelector(SelectionParameters,EvtInfo,LepInfo,JetInfo[0],VtxInfo);
    cutLevels = eSelector->getCutLevels();
    if(doJetMetSystematics) {
-     jmsScaler = new jetMetSystematics(JetMetSystParameters,EvtInfo,JetInfo, LepInfo);
+      assert(JetInfo.size() == JetMetSystParameters.size());
+      for(unsigned i=0; i<JetMetSystParameters.size(); i++)
+         jmsScalers[i] = new jetMetSystematics(JetMetSystParameters[i],EvtInfo,JetInfo[i], LepInfo);
      if(debug) std::cout << "Initialized jetMetSystematics\n";
    }
 
@@ -224,7 +230,7 @@ bpkHitFitAnalysis::beginJob()
      if(nAutoSave!=0) newtree->SetAutoSave(nAutoSave);
 
      if(runHitFit) {
-       hitfit = new doHitFit(HitFitParameters,EvtInfo,LepInfo,JetInfo,GenInfo);
+       hitfit = new doHitFit(HitFitParameters,EvtInfo,LepInfo,JetInfo[0],GenInfo);
        HitFitInfo.RegisterTree(newtree);
      }
 
@@ -276,34 +282,37 @@ bpkHitFitAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
      	if(debug) std::cout << "Entry " << entry << ": Run " << EvtInfo.RunNo << " Event " << EvtInfo.EvtNo << std::endl;
 
-     	if(doJetMetSystematics) jmsScaler->scale();
+     	if(doJetMetSystematics) {
+           for(unsigned iSc=0; iSc<jmsScalers.size(); iSc++)
+              jmsScalers[iSc]->scale();
+        }
 
      	std::vector< std::pair<float,float> > jetmom;
      	std::vector<bool> jetisbtag;
 	    for(int ijet=0; ijet<maxJetsToModify; ijet++) {
 			jetisbtag.push_back(jetIsBTagged(ijet));
-		 	std::pair<float,float> thisjetmom(JetInfo.Et[ijet],JetInfo.Eta[ijet]);
+		 	std::pair<float,float> thisjetmom(JetInfo[0].Et[ijet],JetInfo[0].Eta[ijet]);
 		 	jetmom.push_back(thisjetmom);
 	 	}
      	if(EvtInfo.McFlag && modifyBTags) {
 	     	btsf->setSeed(entry*1e+12+EvtInfo.RunNo*1e+6+EvtInfo.EvtNo);
 		    //get et, eta of jetsjets
-    		for(int ijet=0; ijet<JetInfo.Size; ijet++) {
-			std::pair<float,float> thisjetmom(JetInfo.Et[ijet],JetInfo.Eta[ijet]);
+    		for(int ijet=0; ijet<JetInfo[0].Size; ijet++) {
+			std::pair<float,float> thisjetmom(JetInfo[0].Et[ijet],JetInfo[0].Eta[ijet]);
 			jetmom.push_back(thisjetmom);
 			if(ijet<nJetsToModify) jetisbtag[ijet] = jetIsBTagged(ijet);
 	    	}
 		    btsf->readDB(iSetup,jetmom);
-			//BTag_Utility btag_uti(JetInfo, btag_sigma);
-		    for(int ijet=0; ijet<JetInfo.Size; ijet++) {
+			//BTag_Utility btag_uti(JetInfo[0], btag_sigma);
+		    for(int ijet=0; ijet<JetInfo[0].Size; ijet++) {
 				if(ijet>=nJetsToModify) break;
 // 				double btag_sf = btag_uti.GetSF(ijet);
-// 				if(abs(JetInfo.GenFlavor[ijet]) == 5 || abs(JetInfo.GenFlavor[ijet]) ==4){BTAG_SF->Fill(btag_sf);}
+// 				if(abs(JetInfo[0].GenFlavor[ijet]) == 5 || abs(JetInfo[0].GenFlavor[ijet]) ==4){BTAG_SF->Fill(btag_sf);}
 // 				else {BTAG_SF_LIGHT->Fill(btag_sf);}
 // 				double btag_eff = btag_uti.GetEFF(ijet);
-// 				if(abs(JetInfo.GenFlavor[ijet]) == 5 || abs(JetInfo.GenFlavor[ijet]) ==4) {BTAG_EFF->Fill(btag_eff);}
+// 				if(abs(JetInfo[0].GenFlavor[ijet]) == 5 || abs(JetInfo[0].GenFlavor[ijet]) ==4) {BTAG_EFF->Fill(btag_eff);}
 // 				else {BTAG_EFF_LIGHT->Fill(btag_eff);	
-// 					if(JetInfo.Pt[ijet] > 30 && fabs(JetInfo.Eta[ijet]) < 2.4 && JetInfo.JetIDLOOSE[ijet] ){ BTAG_EFF_LIGHT_PASS->Fill(btag_eff);}
+// 					if(JetInfo[0].Pt[ijet] > 30 && fabs(JetInfo[0].Eta[ijet]) < 2.4 && JetInfo[0].JetIDLOOSE[ijet] ){ BTAG_EFF_LIGHT_PASS->Fill(btag_eff);}
 // 				}
 				
 // 				btag_sf = btag_sf + btag_uti.Btag_SF_ERR;
@@ -313,7 +322,7 @@ bpkHitFitAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 				//double bmistag_sf = btsf->getSF("MISTAG" + bTagAlgo + "M",ijet);
 				//double bmistag_eff = btsf->getSF("MISTAG" + bTagAlgo + "Meff",ijet);
 				if(debug) {
-	   				std::cout << "Jet " << ijet << ": Et,Eta,PdgId,tag= " << jetmom[ijet].first << "," << jetmom[ijet].second << "," << JetInfo.GenFlavor[ijet] << "," << jetisbtag[ijet] << std::endl;
+	   				std::cout << "Jet " << ijet << ": Et,Eta,PdgId,tag= " << jetmom[ijet].first << "," << jetmom[ijet].second << "," << JetInfo[0].GenFlavor[ijet] << "," << jetisbtag[ijet] << std::endl;
 					//std::cout << " btageff_sf=" << btag_sf << " bmistag_sf=" << bmistag_sf << " bmistag_eff=" << bmistag_eff << std::endl;
 					std::cout << " btag_sf=" << btag_sf << " btag_eff=" << btag_eff <<std::endl;
 		 		}
@@ -322,9 +331,9 @@ bpkHitFitAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 		        std::cout << "modifyBTagsWithSF: SF<0, something is wrong(maybe just out of range where SF measured).  Doing nothing\n";
     		    continue;
      			}
-				//btsf->modifyBTagsWithSF(jetisbtag[ijet],JetInfo.GenFlavor[ijet],btag_sf,btag_eff,bmistag_sf,bmistag_eff);
+				//btsf->modifyBTagsWithSF(jetisbtag[ijet],JetInfo[0].GenFlavor[ijet],btag_sf,btag_eff,bmistag_sf,bmistag_eff);
 				bool _jetisbtag = jetisbtag[ijet];
-			    btsf->modifyBTagsWithSF(_jetisbtag,JetInfo.GenFlavor[ijet],btag_sf,btag_eff);
+			    btsf->modifyBTagsWithSF(_jetisbtag,JetInfo[0].GenFlavor[ijet],btag_sf,btag_eff);
 				if(_jetisbtag != jetisbtag[ijet]) std::cout << "jet btag been modified" << std::endl;
 				jetisbtag[ijet] = _jetisbtag;
 				if(debug) std::cout << " after modification, tag= " << jetisbtag[ijet] << std::endl;
@@ -381,10 +390,10 @@ bpkHitFitAnalysis::prioritizeBtags(std::vector<int> jets)
     std::cout << "  Starting with jets:\n";
     for(int j=0; j<(int)jets.size(); j++) {
       double tagvalue=0;
-      if(bTagAlgo.compare("CSV")==0)  tagvalue= JetInfo.CombinedSVBJetTags[jets[j]];
-      else if(bTagAlgo.compare("TCHE")==0) tagvalue= JetInfo.TrackCountHiEffBJetTags[jets[j]];
+      if(bTagAlgo.compare("CSV")==0)  tagvalue= JetInfo[0].CombinedSVBJetTags[jets[j]];
+      else if(bTagAlgo.compare("TCHE")==0) tagvalue= JetInfo[0].TrackCountHiEffBJetTags[jets[j]];
       std::cout << "\tIndex: " << jets[j] 
-		<< " pt=" << JetInfo.Pt[jets[j]] 
+		<< " pt=" << JetInfo[0].Pt[jets[j]] 
 		<< " Btag(" << bTagAlgo << ")=" << tagvalue
 		<< std::endl;
     }
@@ -399,10 +408,10 @@ bpkHitFitAnalysis::prioritizeBtags(std::vector<int> jets)
 
   for(int j=0; j<5; j++) {
     double tagvalue=0;
-    if(bTagAlgo.compare("CSV")==0)  tagvalue= JetInfo.CombinedSVBJetTags[jets[j]];
-    else if(bTagAlgo.compare("TCHE")==0) tagvalue= JetInfo.TrackCountHiEffBJetTags[jets[j]];
+    if(bTagAlgo.compare("CSV")==0)  tagvalue= JetInfo[0].CombinedSVBJetTags[jets[j]];
+    else if(bTagAlgo.compare("TCHE")==0) tagvalue= JetInfo[0].TrackCountHiEffBJetTags[jets[j]];
     idxBtag.first = jets[j];
-    idxBtag.second = tagvalue;//JetInfo.TrackCountHiEffBJetTags[jets[j]];
+    idxBtag.second = tagvalue;//JetInfo[0].TrackCountHiEffBJetTags[jets[j]];
     jetsIdxBtag.push_back(idxBtag);
   }
 
@@ -430,10 +439,10 @@ bpkHitFitAnalysis::prioritizeBtags(std::vector<int> jets)
     std::cout << "  Finishing with jets:\n";
     for(int j=0; j<(int)finalJets.size(); j++) {
       double tagvalue=0;
-      if(bTagAlgo.compare("CSV")==0)  tagvalue= JetInfo.CombinedSVBJetTags[jets[j]];
-      else if(bTagAlgo.compare("TCHE")==0) tagvalue= JetInfo.TrackCountHiEffBJetTags[jets[j]];
+      if(bTagAlgo.compare("CSV")==0)  tagvalue= JetInfo[0].CombinedSVBJetTags[jets[j]];
+      else if(bTagAlgo.compare("TCHE")==0) tagvalue= JetInfo[0].TrackCountHiEffBJetTags[jets[j]];
       std::cout << "\tIndex: " << finalJets[j] 
-		<< " pt=" << JetInfo.Pt[finalJets[j]] 
+		<< " pt=" << JetInfo[0].Pt[finalJets[j]] 
 		<< " Btag=" << tagvalue
 		<< std::endl;
     }
@@ -446,8 +455,8 @@ bpkHitFitAnalysis::prioritizeBtags(std::vector<int> jets)
 bool
 bpkHitFitAnalysis::jetIsBTagged(int ijet) {
 
-  if(bTagAlgo.compare("CSV")==0)  return (JetInfo.CombinedSVBJetTags[ijet] > bTagCut);
-  if(bTagAlgo.compare("TCHE")==0) return (JetInfo.TrackCountHiEffBJetTags[ijet] > bTagCut);
+  if(bTagAlgo.compare("CSV")==0)  return (JetInfo[0].CombinedSVBJetTags[ijet] > bTagCut);
+  if(bTagAlgo.compare("TCHE")==0) return (JetInfo[0].TrackCountHiEffBJetTags[ijet] > bTagCut);
 
   std::cout << "WARNING: No valid b-tagger found, jet not tagged\n";
   return false;

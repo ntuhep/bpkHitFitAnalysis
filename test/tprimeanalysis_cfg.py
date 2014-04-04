@@ -40,7 +40,7 @@ mW = 80.4
 mZ = 91.2
 mH = 125.9
 
-debug = cms.untracked.bool(False)
+debug = cms.untracked.bool(True)
 
 useSplitJets = False
 decayToGeneric = False # T->Wq as opposed to T->Wb. Also for T->Zq
@@ -50,6 +50,8 @@ hadMass = mW # set to the mass of whatever boson we want for the hadronic decay
 jetBranches = 'PFJetInfo'
 if useSplitJets:
     jetBranches = 'SplitJetInfo'
+
+wjetBranches = 'CA8BosonJetInfo'
 
 ObjectSelection = defaultObjectParameters.clone(
     Debug = debug,
@@ -69,9 +71,14 @@ EventSelection = defaultEventParameters.clone(
 JetMetSystematics = defaultJetMetSystematicsParameters.clone(
 	JECfile = cms.untracked.string('Summer12_V2_DATA_AK5PF_UncertaintySources.txt'),
 	#JECfile = cms.untracked.string('/afs/cern.ch/user/t/twang/public/GR_P_V40_AN2_Uncertainty_AK5PF.txt'),
-    Type = cms.untracked.string('None'),
-    Scale = cms.untracked.double(0.),
+    Type = cms.untracked.string('unc'),
+    Scale = cms.untracked.double(1.),
     Debug = debug
+    )
+
+WJetMetSystematics = JetMetSystematics.clone(
+	JECfile = cms.untracked.string('Summer12_V2_DATA_AK5PF_UncertaintySources.txt'),
+    SkipUNC = cms.untracked.bool(True)
     )
 
 BTagSFUtil = defaultBTagSFUtilParameters.clone(
@@ -105,15 +112,17 @@ process.demo = cms.EDAnalyzer(
     Debug            = debug,
     Channels         = cms.untracked.vint32(11,13),#11 for electron, 13 for muon, can do both
     LeptonCollection = cms.untracked.string('PFLepInfo'),
-    JetCollection    = cms.untracked.string(jetBranches),
+    #JetCollections   = cms.untracked.string(jetBranches),
+    JetCollections   = cms.untracked.vstring(jetBranches,wjetBranches),
     CutFlow              = cms.untracked.bool(False),#provide histogram showing how many events passed each selection level
     Skim                 = cms.untracked.bool(False),
     SelectionParameters  = EventSelection.clone(),
-    RunHitFit            = cms.untracked.bool(True),#run HitFit
+    RunHitFit            = cms.untracked.bool(False),#run HitFit
     PriorityBTags        = cms.untracked.int32(0),# change order according to btag
     HitFitParameters     = HitFit.clone(),
-    DoJetMetSystematics  = cms.untracked.bool(False),# applied systematic
-    JetMetSystematicsParameters = JetMetSystematics.clone(),
+    DoJetMetSystematics  = cms.untracked.bool(True),# applied systematic
+    #JetMetSystematicsParameters = cms.VPSet(JetMetSystematics.clone()),
+    JetMetSystematicsParameters = cms.VPSet(JetMetSystematics.clone(),WJetMetSystematics.clone()),
     BTagSFUtilParameters = BTagSFUtil.clone(),
 	BTagUtilitySigma     = cms.untracked.double(0),# determined the sigma of btag(btag uncertainty)
     ModifyBTags          = cms.untracked.bool(False),# applied btag scaling factor

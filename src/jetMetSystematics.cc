@@ -32,10 +32,16 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
      _jerSigmaNeg(iConfig.getUntrackedParameter< std::vector<double> >("JERSigmaNeg")),
      _jerSigmaPos(iConfig.getUntrackedParameter< std::vector<double> >("JERSigmaPos")),
      _jerMinGenJetPt(iConfig.getUntrackedParameter<double>("JERMinGenJetPt",15.)),
+     _skipUNC(iConfig.getUntrackedParameter<bool>("SkipUNC",false)),
      _debug(iConfig.getUntrackedParameter<bool>("Debug",false))
 {
 
    setType(stype);
+
+   if(_skipUNC && UNC==_type) {
+      std::cout << "jetMetSystematics: Will not allow adjustments for unclustered energy\n"; 
+      return;
+   }
 
    _scale = iConfig.getUntrackedParameter<double>("Scale",0.);
    if(_debug) std::cout << "jetMetSystematics: systematic scale = " << _scale << std::endl;
@@ -58,6 +64,7 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
 
 void jetMetSystematics::scale() {
    if(NOSYS == _type) return;
+   if(_skipUNC && UNC==_type) return;
    if(JER==_type && !_evt->McFlag) return; //no need to do any scaling on data
    
    if(JES == _type || JER == _type) { //JES or JER
