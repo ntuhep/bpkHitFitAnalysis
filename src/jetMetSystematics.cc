@@ -38,6 +38,7 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
    setType(stype);
 
    _scale = iConfig.getUntrackedParameter<double>("Scale",0.);
+   if(_debug) std::cout << "jetMetSystematics: systematic scale = " << _scale << std::endl;
 
    _minDRljet = iConfig.getUntrackedParameter<double>("MinDRLepJet",0.3);
 
@@ -48,11 +49,11 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
          _jesSigma = new JetCorrectionUncertainty(*jcp);
       }
       else {
-         std::cout << "ERROR: Couldn't open JES File, can't continue!\n";
+         std::cout << "jetMetSystematics ERROR: Couldn't open JES File, can't continue!\n";
          assert(false);
       }
    }
-
+   if(_debug) std::cout << "jetMetSystematics initialized.\n";
 }
 
 void jetMetSystematics::scale() {
@@ -102,7 +103,7 @@ void jetMetSystematics::scale() {
    }//MET
    
    if(UNC == _type) { //Unclustered energy
-      if(_debug) std::cout << "Scaling unclustered energy\n";
+      if(_debug) std::cout << "jetMetSystematics: Scaling unclustered energy\n";
       TVector2 metVec(_evt->PFMETx,_evt->PFMETy);
       for(int j=0; j<_jets->Size; j++) {
          metVec += TVector2(_jets->PtCorrRaw[j]*cos(_jets->Phi[j]), 
@@ -161,7 +162,7 @@ double jetMetSystematics::jesScale(const int index, const double sigma) {
    _jesSigma->setJetEta(_jets->Eta[index]);
    double uncert = _jesSigma->getUncertainty(sigma>0.);
    double ptscale = (sigma > 0.) ? (1. + uncert) : (1. - uncert);
-   if(_debug) std::cout << "JES scale for jet " << index << ", with Pt=" << _jets->Pt[index] << " is " << ptscale << std::endl; 
+   if(_debug) std::cout << "jetMetSystematics: JES scale for jet " << index << ", with Pt=" << _jets->Pt[index] << " is " << ptscale << std::endl; 
 
    return ptscale;
 }
@@ -185,9 +186,9 @@ double jetMetSystematics::jerScale(const int index, const double sigma) {
    double deltaPt = (_jets->Pt[index] - _jets->GenJetPt[index])*sf;
    //double ptscale = std::max(0.0, (_jets->PtCorrRaw[index] + deltaPt)/_jets->PtCorrRaw[index]);
    double ptscale = std::max(0.0, (_jets->GenJetPt[index] + deltaPt))/_jets->Pt[index];
-   if(_debug) std::cout << "JER scale for jet " << index << ", with Eta=" << _jets->Eta[index] << " is " << ptscale << std::endl; 
+   if(_debug) std::cout << "jetMetSystematics: JER scale for jet " << index << ", with Eta=" << _jets->Eta[index] << " is " << ptscale << std::endl; 
    if(ptscale<=0.) {
-      std::cout << "WARNING: JER scale is " << ptscale << ". May have unintended consequences, so not scaling.\n";
+      std::cout << "jetMetSystematics WARNING: JER scale is " << ptscale << ". May have unintended consequences, so not scaling.\n";
       return 1.;
    }
    return ptscale;
