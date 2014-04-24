@@ -59,7 +59,7 @@ jetMetSystematics::jetMetSystematics(const edm::ParameterSet& iConfig,
          assert(false);
       }
    }
-   if(_debug) std::cout << "jetMetSystematics initialized.\n";
+   if(_debug) std::cout << "jetMetSystematics: initialized.\n";
 }
 
 void jetMetSystematics::scale() {
@@ -68,6 +68,7 @@ void jetMetSystematics::scale() {
    if(JER==_type && !_evt->McFlag) return; //no need to do any scaling on data
    
    if(JES == _type || JER == _type) { //JES or JER
+      if(_debug) std::cout << "jetMetSystematics: Scaling jet energy\n";
       TVector2 metVec(_evt->PFMETx,_evt->PFMETy);
       
       for(int j=0; j<_jets->Size; j++) {
@@ -115,6 +116,7 @@ void jetMetSystematics::scale() {
    }//JES or JER
    
    if(MET == _type) { //MET
+      if(_debug) std::cout << "jetMetSystematics: Scaling MET\n";
       double unc = sqrt(pow(0.599,2)+pow(0.563,2)*_evt->PFSumEt);
       double shift = _scale*unc;
       _evt->PFMET  += shift;
@@ -135,14 +137,14 @@ void jetMetSystematics::scale() {
          bool notInJet=true;
          for(int j=0; j<_jets->Size; j++) {
             double dr = ::dR(_leps->Eta[l],_jets->Eta[j],_leps->Phi[l],_jets->Phi[j]);
-            if(_debug) {
-               std::cout << "\tjet " << j << "(" << _jets->Eta[j] << "," << _jets->Phi[j] << ") ";
-               std::cout << "lepton " << l << "(" << _leps->Eta[l] << "," << _leps->Phi[l] << ") ";
-               std::cout << "dR = " << dr << std::endl;
-            }
+            // if(_debug) {
+            //    std::cout << "\tjet " << j << "(" << _jets->Eta[j] << "," << _jets->Phi[j] << ") ";
+            //    std::cout << "lepton " << l << "(" << _leps->Eta[l] << "," << _leps->Phi[l] << ") ";
+            //    std::cout << "dR = " << dr << std::endl;
+            // }
             if(dr < _minDRljet) {
                notInJet=false;
-               if(_debug) std::cout << "Overlap with dR less than minimum of " << _minDRljet << ". Already covered.\n";
+               if(_debug) std::cout << "Lepton "<< l << " and jet " << j << " overlap with dR " << dr << ", less than minimum of " << _minDRljet << ". Already covered.\n";
                break;
             }
          }
@@ -222,6 +224,6 @@ void jetMetSystematics::setType(std::string s) {
       if(boost::iequals(s,sType[i])) _type = i;
    }
    
-   std::cout << "jetMetSystematics: systematic type: " << sType[_type] << std::endl;
+   std::cout << "jetMetSystematics: systematic type = " << sType[_type] << std::endl;
 }
 
