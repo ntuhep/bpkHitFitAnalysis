@@ -40,7 +40,7 @@ mW = 80.4
 mZ = 91.2
 mH = 125.9
 
-debug = cms.untracked.bool(True)
+debug = cms.untracked.bool(False)
 
 useSplitJets = False
 decayToGeneric = False # T->Wq as opposed to T->Wb. Also for T->Zq
@@ -70,9 +70,8 @@ EventSelection = defaultEventParameters.clone(
 
 JetMetSystematics = defaultJetMetSystematicsParameters.clone(
 	JECfile = cms.untracked.string('Summer12_V2_DATA_AK5PF_UncertaintySources.txt'),
-	#JECfile = cms.untracked.string('/afs/cern.ch/user/t/twang/public/GR_P_V40_AN2_Uncertainty_AK5PF.txt'),
-    Type = cms.untracked.string('unc'),
-    Scale = cms.untracked.double(1.),
+    Type = cms.untracked.string('jer'),
+    Scale = cms.untracked.double(0.),
     Debug = debug
     )
 
@@ -112,16 +111,14 @@ process.demo = cms.EDAnalyzer(
     Debug            = debug,
     Channels         = cms.untracked.vint32(11,13),#11 for electron, 13 for muon, can do both
     LeptonCollection = cms.untracked.string('PFLepInfo'),
-    #JetCollections   = cms.untracked.string(jetBranches),
     JetCollections   = cms.untracked.vstring(jetBranches,wjetBranches),
     CutFlow              = cms.untracked.bool(False),#provide histogram showing how many events passed each selection level
     Skim                 = cms.untracked.bool(False),
     SelectionParameters  = EventSelection.clone(),
-    RunHitFit            = cms.untracked.bool(False),#run HitFit
+    RunHitFit            = cms.untracked.bool(True),#run HitFit
     PriorityBTags        = cms.untracked.int32(0),# change order according to btag
     HitFitParameters     = HitFit.clone(),
-    DoJetMetSystematics  = cms.untracked.bool(True),# applied systematic
-    #JetMetSystematicsParameters = cms.VPSet(JetMetSystematics.clone()),
+    DoJetMetSystematics  = cms.untracked.bool(False),# applied systematic
     JetMetSystematicsParameters = cms.VPSet(JetMetSystematics.clone(),WJetMetSystematics.clone()),
     BTagSFUtilParameters = BTagSFUtil.clone(),
 	BTagUtilitySigma     = cms.untracked.double(0),# determined the sigma of btag(btag uncertainty)
