@@ -16,53 +16,53 @@ using std::string;
 
 class jetMetSystematics {
 
-   public:
+public:
 
-      jetMetSystematics(const edm::ParameterSet&,
-                        EvtInfoBranches &evt, JetInfoBranches &jet, LepInfoBranches &lep);
+   jetMetSystematics( const edm::ParameterSet&,
+                      EvtInfoBranches& evt, JetInfoBranches& jet, LepInfoBranches& lep );
 
-      void scale();
+   void scale();
 
-      enum Systematic{
-         NOSYS,
-         JES,
-         JER,
-         MET,
-         UNC,//unclustered energy
-         nSystematics
-      };
-      static const string sType[];
+   enum Systematic {
+      NOSYS,
+      JES,
+      JER,
+      MET,
+      UNC,//unclustered energy
+      nSystematics
+   };
+   static const string sType[];
 
-   private:
-      double jesScale(const int index, const double sigma);
-      double jerScale(const int index, const double sigma);
-      void   setType (std::string s);
+private:
+   double jesScale( const int index, const double sigma );
+   double jerScale( const int index, const double sigma );
+   void   setType ( std::string s );
 
-      std::string _jecFile;
-      std::string stype;
-      Systematic _type;
+   std::string _jecFile;
+   std::string stype;
+   Systematic _type;
 
-      EvtInfoBranches* _evt;
-      JetInfoBranches* _jets;
-      LepInfoBranches* _leps;
+   EvtInfoBranches* _evt;
+   JetInfoBranches* _jets;
+   LepInfoBranches* _leps;
 
-      double _scale;
+   double _scale;
 
-      double _minDRljet;
+   double _minDRljet;
 
-      //JES scaling info
-      JetCorrectionUncertainty *_jesSigma;
-      std::string _jesUncType;
+   //JES scaling info
+   JetCorrectionUncertainty* _jesSigma;
+   std::string _jesUncType;
 
-      //JER scaling info
-      std::vector<double> _jerEta;//define max edge of eta bin
-      std::vector<double> _jerNominal;//measured data/MC ratio
-      std::vector<double> _jerSigmaSym, _jerSigmaNeg, _jerSigmaPos;//uncertainties on ratio
-      double _jerMinGenJetPt;
+   //JER scaling info
+   std::vector<double> _jerEta;//define max edge of eta bin
+   std::vector<double> _jerNominal;//measured data/MC ratio
+   std::vector<double> _jerSigmaSym, _jerSigmaNeg, _jerSigmaPos;//uncertainties on ratio
+   double _jerMinGenJetPt;
 
-      bool _skipUNC;
+   bool _skipUNC;
 
-      bool   _debug;
+   bool   _debug;
 
 };
 

@@ -12,52 +12,52 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
-class BTagSFUtil{
+class BTagSFUtil {
 
-   public:
-    
-      BTagSFUtil( const edm::ParameterSet& );//std::string algo, int seed=0 );
+public:
 
-      void setSeed(int seed);
+   BTagSFUtil( const edm::ParameterSet& );//std::string algo, int seed=0 );
 
-      void readDB(const edm::EventSetup& iSetup, std::vector< std::pair<float,float> > jets); //pair is Et,Eta
-      void modifyBTagsWithSF( bool& isBTagged, int pdgIdPart,float Btag_SF = 0.98, float Btag_eff = 1.0, float Bmistag_SF = 1.0, float Bmistag_eff = 1.0);
-      void modifyBTagsWithSF(bool& isBTagged, int pdgIdPart, double Btag_SF, double Btag_eff);
-      bool applySF(bool& isBTagged, float Btag_SF, float Btag_eff);
+   void setSeed( int seed );
 
-      void modifyBTagsWithSF(bool& isBTagged_l, bool& isBTagged_m, int pdgIdPart, 
-                             float Btag_SF_l=0.95,  float Btag_SF_m=0.94,  float Btag_eff_l=1.,    float Btag_eff_m=1., 
-                             float Bmistag_SF_l=1., float Bmistag_SF_m=1., float Bmistag_eff_l=1., float Bmistag_eff_m=1.);
-      void applySF(bool& isBTagged_l, bool& isBTagged_m, float Btag_SF_l, float Btag_SF_m, float Btag_eff_l, float Btag_eff_m);
-      
-      float getSF(std::string s, int ijet);
-      
-      const std::vector<double> BtagCut_;
-      const std::vector<double> BtagEff_;//value not stored in DB, so store it here
+   void readDB( const edm::EventSetup& iSetup, std::vector<std::pair<float, float>> jets ); //pair is Et,Eta
+   void modifyBTagsWithSF( bool& isBTagged, int pdgIdPart, float Btag_SF = 0.98, float Btag_eff = 1.0, float Bmistag_SF = 1.0, float Bmistag_eff = 1.0 );
+   void modifyBTagsWithSF( bool& isBTagged, int pdgIdPart, double Btag_SF, double Btag_eff );
+   bool applySF( bool& isBTagged, float Btag_SF, float Btag_eff );
 
-   private:
+   void modifyBTagsWithSF( bool& isBTagged_l, bool& isBTagged_m, int pdgIdPart,
+                           float Btag_SF_l = 0.95,  float Btag_SF_m = 0.94,  float Btag_eff_l = 1.,    float Btag_eff_m = 1.,
+                           float Bmistag_SF_l = 1., float Bmistag_SF_m = 1., float Bmistag_eff_l = 1., float Bmistag_eff_m = 1. );
+   void applySF( bool& isBTagged_l, bool& isBTagged_m, float Btag_SF_l, float Btag_SF_m, float Btag_eff_l, float Btag_eff_m );
 
-      void setupMaps();
+   float getSF( std::string s, int ijet );
 
-      std::map<std::string,PerformanceResult::ResultType> measureMap;
+   const std::vector<double> BtagCut_;
+   const std::vector<double> BtagEff_;//value not stored in DB, so store it here
 
-      edm::ESHandle<BtagPerformance> perfH;
-      //std::vector<std::string> measureName;
-      //std::vector<std::string> measureType;
-      std::vector< std::pair<std::string,std::string> > measure;//name,type
+private:
 
-      const size_t maxNJets;// = 2;
-      float Btageff_SF_;
+   void setupMaps();
 
-      std::map< std::string, std::vector<float> > ScaleFactors;
-      std::map< std::string, std::vector<float> > ScaleFactorsEff;
+   std::map<std::string, PerformanceResult::ResultType> measureMap;
 
-      TRandom3* rand_;
-      std::string algo_;   //b-tag algorithm (mostly csv)
-      std::string source_; //source for b/c eff (ttbar or mujets)
-      std::string period_; //period from which to get mistags ab,c,c,abcd
+   edm::ESHandle<BtagPerformance> perfH;
+   //std::vector<std::string> measureName;
+   //std::vector<std::string> measureType;
+   std::vector<std::pair<std::string, std::string>> measure; //name,type
 
-      bool debug_;
+   const size_t maxNJets;// = 2;
+   float Btageff_SF_;
+
+   std::map<std::string, std::vector<float>> ScaleFactors;
+   std::map<std::string, std::vector<float>> ScaleFactorsEff;
+
+   TRandom3* rand_;
+   std::string algo_;   //b-tag algorithm (mostly csv)
+   std::string source_; //source for b/c eff (ttbar or mujets)
+   std::string period_; //period from which to get mistags ab,c,c,abcd
+
+   bool debug_;
 
 };
 

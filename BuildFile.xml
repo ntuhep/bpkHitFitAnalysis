@@ -2,9 +2,12 @@
 <use name="FWCore/Framework"/>
 <use name="FWCore/PluginManager"/>
 <use name="FWCore/ParameterSet"/>
-<use name="MyAna/bprimeKit"/>
+<use name="MyAna/HelperClasses"/>
 <use name="MyAna/bpkHitFit"/>
 <use name="RecoBTag/PerformanceDB"/>
+<use name="JetMETCorrections/Algorithms"/>
+<use name="JetMETCorrections/Objects"/>
+<use name="JetMETCorrections/Modules"/>
 <use name="CondFormats/PhysicsToolsObjects"/>
 <use name="RecoBTag/Records"/>
 <flags EDM_PLUGIN="1"/>
