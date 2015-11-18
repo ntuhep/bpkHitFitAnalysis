@@ -8,7 +8,7 @@
 #include "TChain.h"
 
 #include "bpkFrameWork/bprimeKit/interface/format.h"
-#include "bpkFrameWork/bprimeKit/interface/bpkUtils.h"
+#include "bpkFrameWork/bpkUtility/interface/bpkUtils.h"
 
 #include "bpkFrameWork/bpkHitFitAnalysis/plugins/createSplitJets.h"
 

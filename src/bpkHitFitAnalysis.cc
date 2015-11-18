@@ -40,7 +40,7 @@
 #include <cassert>
 
 #include "bpkFrameWork/bprimeKit/interface/format.h"
-#include "bpkFrameWork/bprimeKit/interface/bpkUtils.h"
+#include "bpkFrameWork/bpkUtility/interface/bpkUtils.h"
 #include "bpkFrameWork/bpkUtility/interface/objectSelector.h"
 #include "bpkFrameWork/bpkUtility/interface/eventSelector.h"
 #include "bpkFrameWork/bpkHitFit/interface/HitFitInfoBranches.h"
