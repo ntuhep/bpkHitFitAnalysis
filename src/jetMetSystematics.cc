@@ -5,10 +5,10 @@
 #include "TVector2.h"
 #include "TMath.h"
 
-#include "MyAna/bprimeKit/interface/format.h"
-#include "MyAna/bprimeKit/interface/bpkUtils.h"
+#include "bpkFrameWork/bprimeKit/interface/format.h"
+#include "bpkFrameWork/bprimeKit/interface/bpkUtils.h"
 
-#include "MyAna/bpkHitFitAnalysis/interface/jetMetSystematics.h"
+#include "bpkFrameWork/bpkHitFitAnalysis/interface/jetMetSystematics.h"
 
 using namespace std;
 

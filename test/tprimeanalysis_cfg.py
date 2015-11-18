@@ -30,10 +30,10 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )#don't c
 
 process.source = cms.Source("EmptySource")
 
-from MyAna.bpkHitFit.HitFitParameters_cfi import *
-from MyAna.bprimeKit.EventParameters_cfi import *
-from MyAna.bpkHitFitAnalysis.JetMetSystematicsParameters_cfi import *
-from MyAna.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *
+from bpkFrameWork.bpkHitFit.HitFitParameters_cfi import *
+from bpkFrameWork.bprimeKit.EventParameters_cfi import *
+from bpkFrameWork.bpkHitFitAnalysis.JetMetSystematicsParameters_cfi import *
+from bpkFrameWork.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *
 
 #these constants should probably be moved somewhere else
 mW = 80.4
@@ -88,9 +88,9 @@ BTagSFUtil = defaultBTagSFUtilParameters.clone(
     )   
 
 
-configFileHitFit = 'MyAna/bpkHitFit/data/setting/RunHitFitConfiguration.txt'
+configFileHitFit = 'bpkFrameWork/bpkHitFit/data/setting/RunHitFitConfiguration.txt'
 if decayToGeneric:
-   configFileHitFit = 'MyAna/bpkHitFit/data/setting/RunHitFitConfiguration_bMassless.txt'
+   configFileHitFit = 'bpkFrameWork/bpkHitFit/data/setting/RunHitFitConfiguration_bMassless.txt'
 
 HitFit = defaultHitFitParameters.clone(
     Debug = debug,

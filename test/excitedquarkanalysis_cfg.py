@@ -34,10 +34,10 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )#don't c
 
 process.source = cms.Source("EmptySource")
 
-from MyAna.bpkHitFit.HitFitParameters_cfi import *
-from MyAna.bprimeKit.EventParameters_cfi import *
-from MyAna.bpkHitFitAnalysis.JetMetSystematicsParameters_cfi import *
-from MyAna.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *
+from bpkFrameWork.bpkHitFit.HitFitParameters_cfi import *
+from bpkFrameWork.bprimeKit.EventParameters_cfi import *
+from bpkFrameWork.bpkHitFitAnalysis.JetMetSystematicsParameters_cfi import *
+from bpkFrameWork.bpkHitFitAnalysis.BTagSFUtilParameters_cfi import *
 
 debug = cms.untracked.bool(True)
 
@@ -89,7 +89,7 @@ HitFit = defaultHitFitParameters.clone(
     Debug = debug,
 	FitType = cms.untracked.int32(1),#TSTAR fit
 	SaveOnlyBest = cms.untracked.bool(True),#only take best permutation
-	Default = cms.untracked.FileInPath("MyAna/bpkHitFit/data/setting/RunHitFitConfiguration_topgluon.txt"),
+	Default = cms.untracked.FileInPath("bpkFrameWork/bpkHitFit/data/setting/RunHitFitConfiguration_topgluon.txt"),
     JetCorrectionLevel = cms.untracked.string('L3'),
     NuSolution = cms.untracked.int32(2),
 	RequireMatchedBtag = cms.untracked.bool(True),

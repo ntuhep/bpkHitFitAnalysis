@@ -7,10 +7,10 @@
 #include "TFile.h"
 #include "TChain.h"
 
-#include "MyAna/bprimeKit/interface/format.h"
-#include "MyAna/bprimeKit/interface/bpkUtils.h"
+#include "bpkFrameWork/bprimeKit/interface/format.h"
+#include "bpkFrameWork/bprimeKit/interface/bpkUtils.h"
 
-#include "MyAna/bpkHitFitAnalysis/plugins/createSplitJets.h"
+#include "bpkFrameWork/bpkHitFitAnalysis/plugins/createSplitJets.h"
 
 createSplitJets::createSplitJets( const edm::ParameterSet& iConfig ) : 
    maxEvents( iConfig.getUntrackedParameter<int>( "MaxEvents", -1 ) ),

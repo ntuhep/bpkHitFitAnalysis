@@ -3,6 +3,6 @@
 <use   name="FWCore/PluginManager"/>
 <use   name="FWCore/ParameterSet"/>
 
-<library   name="MyAnabpkHitFitAnalysis_plugins" file="createSplitJets.cc">
+<library   name="bpkFrameWorkbpkHitFitAnalysis_plugins" file="createSplitJets.cc">
   <flags   EDM_PLUGIN="1"/>
 </library>

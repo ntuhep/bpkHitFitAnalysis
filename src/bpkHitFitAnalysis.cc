@@ -3,7 +3,7 @@
 // Package:    bpkHitFitAnalysis
 // Class:      bpkHitFitAnalysis
 //
-/**\class bpkHitFitAnalysis bpkHitFitAnalysis.cc MyAna/bpkHitFitAnalysis/src/bpkHitFitAnalysis.cc
+/**\class bpkHitFitAnalysis bpkHitFitAnalysis.cc bpkFrameWork/bpkHitFitAnalysis/src/bpkHitFitAnalysis.cc
 
  Description: [one line class summary]
 
@@ -39,17 +39,17 @@
 
 #include <cassert>
 
-#include "MyAna/bprimeKit/interface/format.h"
-#include "MyAna/bprimeKit/interface/bpkUtils.h"
-#include "MyAna/HelperClasses/interface/objectSelector.h"
-#include "MyAna/HelperClasses/interface/eventSelector.h"
-#include "MyAna/bpkHitFit/interface/HitFitInfoBranches.h"
-#include "MyAna/bpkHitFit/interface/doHitFit.h"
+#include "bpkFrameWork/bprimeKit/interface/format.h"
+#include "bpkFrameWork/bprimeKit/interface/bpkUtils.h"
+#include "bpkFrameWork/bpkUtility/interface/objectSelector.h"
+#include "bpkFrameWork/bpkUtility/interface/eventSelector.h"
+#include "bpkFrameWork/bpkHitFit/interface/HitFitInfoBranches.h"
+#include "bpkFrameWork/bpkHitFit/interface/doHitFit.h"
 
-#include "MyAna/bpkHitFitAnalysis/interface/jetMetSystematics.h"
-#include "MyAna/bpkHitFitAnalysis/interface/BTagSFUtil-tprime.h"
+#include "bpkFrameWork/bpkHitFitAnalysis/interface/jetMetSystematics.h"
+#include "bpkFrameWork/bpkHitFitAnalysis/interface/BTagSFUtil-tprime.h"
 
-#include "MyAna/bpkHitFitAnalysis/interface/GetBTag_SF_EFF.h"
+#include "bpkFrameWork/bpkHitFitAnalysis/interface/GetBTag_SF_EFF.h"
 
 static const int maxChannels = 2;
 static const int maxJetsToModify = 8;//8 is maximum HitFit will take, so this should be plenty
