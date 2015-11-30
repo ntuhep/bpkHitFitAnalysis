@@ -312,9 +312,10 @@ bpkHitFitAnalysis::analyze( const edm::Event& iEvent, const edm::EventSetup& iSe
             //double bmistag_sf = btsf->getSF("MISTAG" + bTagAlgo + "M",ijet);
             //double bmistag_eff = btsf->getSF("MISTAG" + bTagAlgo + "Meff",ijet);
             if( debug ) {
-               std::cout << "Jet " << ijet << ": Et,Eta,PdgId,tag= " << jetmom[ijet].first << "," << jetmom[ijet].second << "," << JetInfo.GenFlavor[ijet] << "," << jetisbtag[ijet] << std::endl;
-               //std::cout << " btageff_sf=" << btag_sf << " bmistag_sf=" << bmistag_sf << " bmistag_eff=" << bmistag_eff << std::endl;
-               std::cout << " btag_sf=" << btag_sf << " btag_eff=" << btag_eff << std::endl;
+               std::cout << "Jet " << ijet 
+                         << ": Et,Eta,PdgId,tag= " << jetmom[ijet].first << "," << jetmom[ijet].second << "," 
+                         << JetInfo.GenFlavor[ijet] << "," << jetisbtag[ijet] << std::endl
+                         << " btag_sf=" << btag_sf << " btag_eff=" << btag_eff << std::endl;
             }
             //if(btag_sf<0 || btag_eff<0 || bmistag_sf<0 || bmistag_eff<0) {
             if( btag_sf < 0 || btag_eff < 0 ) {
